@@ -12,3 +12,4 @@ jobs:
 
       - name: Run shuttle project locally. 
         uses: ivinjabraham/shuttle-run@v1.1
+S
