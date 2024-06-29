@@ -18,12 +18,20 @@ impl QueryRoot {
         Ok(users)
     }
 
-    async fn get_attendance(&self, ctx: &Context<'_>, date: String) -> Result<Vec<Attendance>, sqlx::Error> {
-        let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
-        let attendance_list = sqlx::query_as::<_, Attendance>("SELECT id, date, timein, timeout FROM Attendance WHERE date = $1")
-            .bind(date)
-            .fetch_all(pool.as_ref())
-            .await?;
-        Ok(attendance_list)
+async fn get_attendance(
+    &self,
+    ctx: &Context<'_>,
+    date: NaiveDate,
+) -> Result<Vec<Attendance>, sqlx::Error> {
+    let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
+
+    let attendance_list = sqlx::query_as::<_, Attendance>(
+        "SELECT id, date, timein, timeout FROM Attendance WHERE date = $1"
+    )
+    .bind(date)
+    .fetch_all(pool.as_ref())
+    .await?;
+
+    Ok(attendance_list)
     }
 }
