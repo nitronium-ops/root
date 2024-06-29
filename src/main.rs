@@ -19,6 +19,7 @@ struct MyState {
     pool: Arc<PgPool>,
 }
 
+//This is the main method
 #[shuttle_runtime::main]
 async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::ShuttleAxum {
     env::set_var("PGOPTIONS", "-c ignore_version=true");
