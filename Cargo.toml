@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-async-graphql = "7.0.6"
+async-graphql = { version = "7.0.6", features = ["chrono"] }
 async-graphql-axum = "7.0.6"
 axum = "0.7.3"
+chrono = "0.4.38"
 serde = { version = "1.0.188", features = ["derive"] }
 shuttle-axum = "0.46.0"
 shuttle-runtime = "0.46.0"
