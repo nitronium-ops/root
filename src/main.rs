@@ -9,7 +9,6 @@ use crate::graphql::mutations::MutationRoot;
 use crate::graphql::query::QueryRoot;
 use crate::routes::graphiql;
 
-
 mod db;
 mod graphql;
 mod routes;

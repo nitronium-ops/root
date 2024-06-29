@@ -1,6 +1,8 @@
 use async_graphql::{Context, Object};
 use sqlx::PgPool;
 use std::sync::Arc;
+use chrono::NaiveDate;
+
 
 use crate::db::{member::Member, attendance::Attendance};
 
