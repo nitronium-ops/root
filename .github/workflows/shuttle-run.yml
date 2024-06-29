@@ -11,5 +11,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run shuttle project locally. 
-        uses: ivinjabraham/shuttle-run@v1.1
-S
+        uses: ivinjabraham/shuttle-run@v1.0
