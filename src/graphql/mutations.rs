@@ -10,6 +10,8 @@ pub struct MutationRoot;
 
 #[Object]
 impl MutationRoot {
+
+    //Mutation for adding members to the Member table
     async fn add_member(
         &self, 
         ctx: &Context<'_>, 
@@ -37,6 +39,7 @@ impl MutationRoot {
         Ok(member)
     }
 
+    //Mutation for adding Attendance to the Attendance table
     async fn add_attendance(
         &self,
         ctx: &Context<'_>,
