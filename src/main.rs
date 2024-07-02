@@ -1,7 +1,7 @@
 
 use std::{env, sync::Arc};
 use tokio::task;
-use tokio::time::{sleep_until, Instant};
+use tokio::time::{sleep, sleep_until, Instant};
 use std::time::Duration;
 use async_graphql_axum::GraphQL;
 use axum::{routing::get, Router};
@@ -41,8 +41,12 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
     let router = Router::new()
         .route("/", get(graphiql).post_service(GraphQL::new(schema.clone())))
         .with_state(state);
+    task::spawn(async move {
+         
+        schedule_task_at_midnight(pool.clone()).await; // Call the function after 10 seconds
+    });
 
-    task::spawn(schedule_task_at_midnight(pool.clone()));
+
     Ok(router.into())
 }
 
@@ -62,7 +66,7 @@ async fn scheduled_task(pool: Arc<PgPool>) {
                 let timein = NaiveTime::from_hms_opt(0, 0, 0);
                 let timeout = NaiveTime::from_hms_opt(0, 0, 0); // Default time, can be modified as needed
                 
-                let attendance = sqlx::query_as::<_, Attendance>(
+                let attendance = sqlx::query(
                     "INSERT INTO Attendance (id, date, timein, timeout, present) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id, date) DO NOTHING RETURNING *"
                 )
                 .bind(member.id)
@@ -70,9 +74,9 @@ async fn scheduled_task(pool: Arc<PgPool>) {
                 .bind(timein)
                 .bind(timeout)
                 .bind(false)
-                .fetch_one(pool.as_ref())
+                .execute(pool.as_ref())
                 .await;
-
+            
                 match attendance {
                     Ok(_) => println!("Attendance record added for member ID: {}", member.id),
                     Err(e) => eprintln!("Failed to insert attendance for member ID: {}: {:?}", member.id, e),
@@ -94,10 +98,10 @@ async fn schedule_task_at_midnight(pool: Arc<PgPool>) {
 
     let now_naive = now.naive_local();
     let duration_until_midnight = next_midnight.signed_duration_since(now_naive);
-    let sleep_duration = Duration::from_secs(duration_until_midnight.num_seconds() as u64);
+    let sleep_duration = Duration::from_secs(duration_until_midnight.num_seconds()  as u64 + 60);
 
     sleep_until(Instant::now() + sleep_duration).await;
-
     scheduled_task(pool.clone()).await;
+    print!("done");
     }
 }
