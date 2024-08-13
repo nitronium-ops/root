@@ -11,7 +11,7 @@ pub struct QueryRoot;
 #[Object]
 impl QueryRoot {
 
-    //Query for retrieving the Members
+    //Query for retrieving the members
     async fn get_member(&self, ctx: &Context<'_>) -> Result<Vec<Member>, sqlx::Error> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
         let users = sqlx::query_as::<_, Member>("SELECT * FROM Member")
@@ -20,7 +20,7 @@ impl QueryRoot {
         Ok(users)
     }
 
-    //Query for retrieving the Attendance based on date
+    //Query for retrieving the attendance based on date
     async fn get_attendance(
         &self,
         ctx: &Context<'_>,
