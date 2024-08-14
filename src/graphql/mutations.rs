@@ -50,16 +50,18 @@ impl MutationRoot {
         date: NaiveDate,
         timein: NaiveTime,
         timeout: NaiveTime,
+        is_present: bool,
     ) -> Result<Attendance, sqlx::Error> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
 
         let attendance = sqlx::query_as::<_, Attendance>(
-            "INSERT INTO Attendance (id, date, timein, timeout) VALUES ($1, $2, $3, $4) RETURNING *"
+            "INSERT INTO Attendance (id, date, timein, timeout, is_present) VALUES ($1, $2, $3, $4, $5) RETURNING *"
         )
         .bind(id)
         .bind(date)
         .bind(timein)
         .bind(timeout)
+        .bind(is_present)
         .fetch_one(pool.as_ref())
         .await?;
 
