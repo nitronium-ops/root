@@ -13,4 +13,5 @@ pub struct Member {
     pub email: String,
     pub sex: String,
     pub year: i32,
+    pub macaddress: String,
 }

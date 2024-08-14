@@ -1,1 +1,1 @@
-ALTER TABLE Attendance RENAME COLUMN ispresent TO is_present;
+ALTER TABLE Attendance RENAME COLUMN ispresent TO is_prresent;
