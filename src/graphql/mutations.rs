@@ -3,6 +3,10 @@ use chrono::{NaiveDate, NaiveTime};
 use sqlx::PgPool;
 use  sqlx::types::chrono;
 use std::sync::Arc;
+use hmac::{Hmac,Mac};
+use sha2::Sha256;
+
+type HmacSha256 = Hmac<Sha256>;
 
 use crate::db::{member::Member, attendance::Attendance};
 
@@ -22,8 +26,11 @@ impl MutationRoot {
         sex: String, 
         year: i32,
         macaddress: String,
+
     ) -> Result<Member, sqlx::Error> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
+
+
 
         let member = sqlx::query_as::<_, Member>(
             "INSERT INTO Member (rollno, name, hostel, email, sex, year, macaddress) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *"
@@ -51,12 +58,31 @@ impl MutationRoot {
         timein: NaiveTime,
         timeout: NaiveTime,
         is_present: bool,
+        hmac_signature: String,
     ) -> Result<Attendance, sqlx::Error> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
+
+        let config = Config::from_file("Secrets.toml").expect("Failed to load config");
+        let secret_key = config.secret_key;
+
+        let mut mac = HmacSha256::new_from_slice(secret_key.as_bytes())
+        .expect("HMAC can take key of any size");
+
+        let expected_signature = mac.   finalize().into_bytes();
+
+        // Convert the received HMAC signature from the client to bytes for comparison
+        let received_signature = hex::decode(hmac_signature)
+            .map_err(|_| sqlx::Error::Protocol("Invalid HMAC signature".into()))?;
+
+        // Check if the signatures match
+        if expected_signature.as_slice() != received_signature.as_slice() {
+            return Err(sqlx::Error::Protocol("HMAC verification failed".into()));
+        }
 
         let attendance = sqlx::query_as::<_, Attendance>(
             "INSERT INTO Attendance (id, date, timein, timeout, is_present) VALUES ($1, $2, $3, $4, $5) RETURNING *"
         )
+        
         .bind(id)
         .bind(date)
         .bind(timein)
