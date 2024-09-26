@@ -1,16 +1,16 @@
 
 use std::{env, sync::Arc};
 use tokio::task;
-use tokio::time::{sleep, sleep_until, Instant};
+use tokio::time::{ sleep_until, Instant};
 use std::time::Duration;
 use async_graphql_axum::GraphQL;
 use axum::{routing::get, Router};
 use chrono::{ Local, NaiveTime};
-use db::attendance::Attendance;
+
 use db::member::Member;
 use sqlx::PgPool;
 use async_graphql::{ Schema, EmptySubscription};
-
+use shuttle_runtime::SecretStore;
 use crate::graphql::mutations::MutationRoot;
 use crate::graphql::query::QueryRoot;
 use crate::routes::graphiql;
@@ -22,21 +22,24 @@ mod routes;
 #[derive(Clone)]
 struct MyState {
     pool: Arc<PgPool>,
+    secret_key: String,
 }
 
 //Main method
 #[shuttle_runtime::main]
-async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::ShuttleAxum {
+async fn main(#[shuttle_shared_db::Postgres] pool: PgPool,#[shuttle_runtime::Secrets] secrets: SecretStore,) -> shuttle_axum::ShuttleAxum {
     env::set_var("PGOPTIONS", "-c ignore_version=true");
     
     sqlx::migrate!().run(&pool).await.expect("Failed to run migrations");
 
     let pool = Arc::new(pool);
+    let secret_key = secrets.get("ROOT_SECRET").expect("ROOT_SECRET not found");
     let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(pool.clone())
+        .data(secret_key.clone()) //
         .finish();
 
-    let state = MyState { pool: pool.clone() };
+    let state = MyState { pool: pool.clone() , secret_key: secret_key.clone()};
     
     let router = Router::new()
         .route("/", get(graphiql).post_service(GraphQL::new(schema.clone())))
