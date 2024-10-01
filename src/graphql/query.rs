@@ -29,7 +29,7 @@ impl QueryRoot {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
 
         let attendance_list = sqlx::query_as::<_, Attendance>(
-            "SELECT id, date, timein, timeout FROM Attendance WHERE date = $1"
+            "SELECT id, date, timein, timeout, is_present FROM Attendance WHERE date = $1"
         )
         .bind(date)
         .fetch_all(pool.as_ref())

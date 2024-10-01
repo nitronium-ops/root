@@ -70,7 +70,7 @@ async fn scheduled_task(pool: Arc<PgPool>) {
                 let timeout = NaiveTime::from_hms_opt(0, 0, 0); // Default time, can be modified as needed
                 
                 let attendance = sqlx::query(
-                    "INSERT INTO Attendance (id, date, timein, timeout, present) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id, date) DO NOTHING RETURNING *"
+                    "INSERT INTO Attendance (id, date, timein, timeout, is_present) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id, date) DO NOTHING RETURNING *"
                 )
                 .bind(member.id)
                 .bind(today)
