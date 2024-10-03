@@ -5,6 +5,7 @@ use tokio::time::{ sleep_until, Instant};
 use std::time::Duration;
 use async_graphql_axum::GraphQL;
 use axum::{routing::get, Router};
+use tower_http::cors::{Any, CorsLayer}; 
 use chrono::{ Local, NaiveTime};
 use chrono_tz::Asia::Kolkata;
 use db::member::Member;
@@ -40,10 +41,16 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool,#[shuttle_runtime::Sec
         .finish();
 
     let state = MyState { pool: pool.clone() , secret_key: secret_key.clone()};
-    
+
+    let cors = CorsLayer::new()
+    .allow_origin(Any) // Allow any origin
+    .allow_methods(tower_http::cors::Any) // Allow any HTTP method
+    .allow_headers(tower_http::cors::Any);
+
     let router = Router::new()
         .route("/", get(graphiql).post_service(GraphQL::new(schema.clone())))
-        .with_state(state);
+        .with_state(state)
+        .layer(cors);
     task::spawn(async move {
          
         schedule_task_at_midnight(pool.clone()).await; // Call the function after 10 seconds
