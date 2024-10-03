@@ -7,7 +7,7 @@ use async_graphql_axum::GraphQL;
 use axum::{routing::get, Router};
 use tower_http::cors::{Any, CorsLayer}; 
 use chrono::{ Local, NaiveTime};
-
+use chrono_tz::Asia::Kolkata;
 use db::member::Member;
 use sqlx::PgPool;
 use async_graphql::{ Schema, EmptySubscription};
@@ -70,7 +70,7 @@ async fn scheduled_task(pool: Arc<PgPool>) {
 
     match members {
         Ok(members) => {
-            let today = Local::now().naive_local();
+            let today = Local::now().with_timezone(&Kolkata);
 
             for member in members {
                 let timein = NaiveTime::from_hms_opt(0, 0, 0);

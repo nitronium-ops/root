@@ -1,8 +1,9 @@
 use async_graphql::{Context, Object};
 use ::chrono::Local;
 use chrono::{NaiveDate, NaiveTime};
+use chrono_tz::Asia::Kolkata;
 use sqlx::PgPool;
-use  sqlx::types::chrono;
+use sqlx::types::chrono;
 use std::sync::Arc;
 use hmac::{Hmac,Mac};
 use sha2::Sha256;
@@ -113,10 +114,7 @@ impl MutationRoot {
             return Err(sqlx::Error::Protocol("HMAC verification failed".into()));
         }
 
-
-      
-
-        let current_time = Local::now().time();
+        let current_time = Local::now().with_timezone(&Kolkata).time();
 
         let attendance = sqlx::query_as::<_, Attendance>(
             "
