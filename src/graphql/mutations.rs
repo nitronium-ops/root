@@ -51,6 +51,31 @@ impl MutationRoot {
         Ok(member)
     }
 
+    async fn edit_mac(
+        &self,
+        ctx: &Context<'_>,
+        id: i32,
+        macaddress: String,
+    ) -> Result<Member,sqlx::Error> {
+        let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
+
+        let member = sqlx::query_as::<_, Member>(
+            "
+            UPDATE Member
+            SET 
+                macaddress = $1
+            WHERE id = $2
+            RETURNING *
+            "
+        )
+
+        .bind(macaddress)
+        .bind(id)
+        .fetch_one(pool.as_ref())
+        .await?;
+
+        Ok(member)
+    }
     
     //Mutation for adding attendance to the Attendance table
     async fn add_attendance(
