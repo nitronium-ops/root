@@ -30,6 +30,7 @@ email: String!
 sex: String!
 year: Int!
 macaddress: String!
+discordId: String!
 ```
 
 ---
