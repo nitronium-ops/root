@@ -29,7 +29,6 @@ impl MutationRoot {
         sex: String, 
         year: i32,
         macaddress: String,
-        discord_id: String,
 
     ) -> Result<Member, sqlx::Error> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
@@ -37,7 +36,7 @@ impl MutationRoot {
 
 
         let member = sqlx::query_as::<_, Member>(
-            "INSERT INTO Member (rollno, name, hostel, email, sex, year, macaddress, discord_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *"
+            "INSERT INTO Member (rollno, name, hostel, email, sex, year, macaddress) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *"
         )
         .bind(rollno)
         .bind(name)
@@ -46,7 +45,6 @@ impl MutationRoot {
         .bind(sex)
         .bind(year)
         .bind(macaddress)
-        .bind(discord_id)
         .fetch_one(pool.as_ref())
         .await?;
 
