@@ -14,5 +14,5 @@ pub struct Member {
     pub sex: String,
     pub year: i32,
     pub macaddress: String,
-    pub discord_id: String,
+    pub discord_id: Option<String>,
 }
