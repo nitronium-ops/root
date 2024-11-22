@@ -53,25 +53,54 @@ impl MutationRoot {
         Ok(member)
     }
 
-    async fn edit_mac(
+    async fn edit_member(
         &self,
         ctx: &Context<'_>,
         id: i32,
+        hostel: String,
+        year: i32,
         macaddress: String,
+        discord_id: String,
+        hmac_signature: String,
     ) -> Result<Member,sqlx::Error> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
+        
+        let secret_key = ctx.data::<String>().expect("HMAC secret not found in context");
+
+        let mut mac = HmacSha256::new_from_slice(secret_key.as_bytes()).expect("HMAC can take key of any size");
+
+        let message = format!("{}{}{}{}{}", id, hostel, year, macaddress, discord_id);
+        mac.update(message.as_bytes());
+
+        let expected_signature = mac.finalize().into_bytes();
+        
+        // Convert the received HMAC signature from the client to bytes for comparison
+        let received_signature = hex::decode(hmac_signature)
+            .map_err(|_| sqlx::Error::Protocol("Invalid HMAC signature".into()))?;
+        
+
+        if expected_signature.as_slice() != received_signature.as_slice() {
+            
+            return Err(sqlx::Error::Protocol("HMAC verification failed".into()));
+        }
 
         let member = sqlx::query_as::<_, Member>(
             "
             UPDATE Member
-            SET 
-                macaddress = $1
-            WHERE id = $2
+            SET
+                hostel = CASE WHEN $1 = '' THEN hostel ELSE $1 END,
+                year = CASE WHEN $2 = 0 THEN year ELSE $2 END,
+                macaddress = CASE WHEN $3 = '' THEN macaddress ELSE $3 END,
+                discord_id = CASE WHEN $4 = '' THEN discord_id ELSE $4 END
+            WHERE id = $5
             RETURNING *
             "
         )
 
+        .bind(hostel)
+        .bind(year)
         .bind(macaddress)
+        .bind(discord_id)
         .bind(id)
         .fetch_one(pool.as_ref())
         .await?;
