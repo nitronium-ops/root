@@ -2,6 +2,7 @@
 
 ## Contents
 - [addMember](#addmember)
+- [editMember](#editmember)
 - [markAttendance](#markattendance)
 - [addAttendance](#addattendance)
 
@@ -38,6 +39,58 @@ discordId: String
 - `2` for second-year
 - `3` for third-year
 - `4` for fourth-year
+
+---
+
+### editMember
+Edit details of an existing member.
+
+#### GraphQL Mutation
+```graphql
+mutation {
+    editMember(id:0,hostel:"hostel",year:2,macaddress:"mac_address",discordId:"discord_id",hmacSignature:"hmac_signature") {
+    id
+    hostel
+    discord_id
+    }
+}
+```
+
+#### Arguments (all required)
+```graphql
+id: Int!
+hostel: String!
+year: Int!
+macaddress: String!
+discordId: String!
+hmacSignature: String!
+```
+
+**Note:** Follow the below format if you want to leave some fields unchanged
+- `''` (*empty string*) for type `String`
+    - Feilds: `hostel,macaddress,discordId`
+- `0` for type `Int`
+    - Feilds: `year`
+
+For example, If you want to update only `discordId`:
+
+```graphql
+mutation {
+    editMember(id:1,hostel:"",year:0,macaddress:"",discordId:"discord_id",hmacSignature:"hmac_signature") {
+        id
+        hostel
+        discord_id
+    }
+}
+```
+
+Note: `id` and `hmacSignature` can't be empty
+
+#### HMAC Format
+
+```
+"{secret_key}{id}{hostel}{year}{macaddress}{discord_id}"
+```
 
 ---
 
