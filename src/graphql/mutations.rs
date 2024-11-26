@@ -104,7 +104,6 @@ impl MutationRoot {
         mac.update(message.as_bytes());
 
         let expected_signature = mac.finalize().into_bytes();
-        
       
         // Convert the received HMAC signature from the client to bytes for comparison
         let received_signature = hex::decode(hmac_signature)
@@ -137,5 +136,52 @@ impl MutationRoot {
         .await?;
 
         Ok(attendance)
+    }
+    async fn update_streak(
+        &self,
+        ctx: &Context<'_>,
+        id: i32,
+        has_sent_update: bool,
+    ) -> Result<Member, sqlx::Error> {
+        let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
+
+        let member = sqlx::query_as::<_, Member>(
+            "
+            SELECT streak, max_streak
+            FROM Member
+            WHERE id = $1
+            "
+        )
+        .bind(id)
+        .fetch_one(pool.as_ref())
+        .await?;
+
+        let current_streak = member.streak.unwrap_or(0);
+        let max_streak = member.max_streak.unwrap_or(0);
+
+        let (new_streak, new_max_streak) = if has_sent_update {
+            let updated_streak = current_streak + 1;
+            let updated_max_streak = (updated_streak).max(max_streak);
+            (updated_streak, updated_max_streak)
+        }else{
+            (0, max_streak)
+        };
+
+        let updated_member = sqlx::query_as::<_, Member>(
+            "
+            UPDATE Member
+            SET streak = $1, max_streak = $2
+            WHERE id = $3
+            RETURNING *
+            "
+        )
+
+        .bind(new_streak)
+        .bind(new_max_streak)
+        .bind(id)
+        .fetch_one(pool.as_ref())
+        .await?;
+
+        Ok(updated_member)
     }
 }

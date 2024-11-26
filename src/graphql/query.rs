@@ -36,4 +36,18 @@ impl QueryRoot {
         .await?;
         Ok(attendance_list)
     }
+    //Query for retrieving the streaks
+    async fn get_streak(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Vec<Member>, sqlx::Error> {
+        let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
+
+        let streak_list = sqlx::query_as::<_, Member>(
+            "SELECT id, name, streak, max_streak FROM Member"
+        )
+        .fetch_all(pool.as_ref())
+        .await?;
+        Ok(streak_list)
+    }
 }

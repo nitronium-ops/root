@@ -15,4 +15,6 @@ pub struct Member {
     pub year: i32,
     pub macaddress: String,
     pub discord_id: Option<String>,
+    pub streak: Option<i32>,
+    pub max_streak: Option<i32>,
 }
