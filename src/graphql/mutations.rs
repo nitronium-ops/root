@@ -30,6 +30,7 @@ impl MutationRoot {
         year: i32,
         macaddress: String,
         discord_id: String,
+        group_id: i32,
 
     ) -> Result<Member, sqlx::Error> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
@@ -37,7 +38,7 @@ impl MutationRoot {
 
 
         let member = sqlx::query_as::<_, Member>(
-            "INSERT INTO Member (rollno, name, hostel, email, sex, year, macaddress, discord_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *"
+            "INSERT INTO Member (rollno, name, hostel, email, sex, year, macaddress, discord_id, group_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *"
         )
         .bind(rollno)
         .bind(name)
@@ -47,6 +48,7 @@ impl MutationRoot {
         .bind(year)
         .bind(macaddress)
         .bind(discord_id)
+        .bind(group_id)
         .fetch_one(pool.as_ref())
         .await?;
 
@@ -61,6 +63,7 @@ impl MutationRoot {
         year: i32,
         macaddress: String,
         discord_id: String,
+        group_id: i32,
         hmac_signature: String,
     ) -> Result<Member,sqlx::Error> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
@@ -69,7 +72,7 @@ impl MutationRoot {
 
         let mut mac = HmacSha256::new_from_slice(secret_key.as_bytes()).expect("HMAC can take key of any size");
 
-        let message = format!("{}{}{}{}{}", id, hostel, year, macaddress, discord_id);
+        let message = format!("{}{}{}{}{}{}", id, hostel, year, macaddress, discord_id, group_id);
         mac.update(message.as_bytes());
 
         let expected_signature = mac.finalize().into_bytes();
@@ -91,8 +94,9 @@ impl MutationRoot {
                 hostel = CASE WHEN $1 = '' THEN hostel ELSE $1 END,
                 year = CASE WHEN $2 = 0 THEN year ELSE $2 END,
                 macaddress = CASE WHEN $3 = '' THEN macaddress ELSE $3 END,
-                discord_id = CASE WHEN $4 = '' THEN discord_id ELSE $4 END
-            WHERE id = $5
+                discord_id = CASE WHEN $4 = '' THEN discord_id ELSE $4 END,
+                group_id = CASE WHEN $5 = 0 THEN group_id ELSE $5 END
+            WHERE id = $6
             RETURNING *
             "
         )
@@ -101,6 +105,7 @@ impl MutationRoot {
         .bind(year)
         .bind(macaddress)
         .bind(discord_id)
+        .bind(group_id)
         .bind(id)
         .fetch_one(pool.as_ref())
         .await?;

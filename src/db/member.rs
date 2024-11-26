@@ -17,4 +17,5 @@ pub struct Member {
     pub discord_id: Option<String>,
     pub streak: Option<i32>,
     pub max_streak: Option<i32>,
+    pub group_id: Option<i32>,
 }
