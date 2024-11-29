@@ -11,7 +11,7 @@ use sha2::Sha256;
 
 type HmacSha256 = Hmac<Sha256>;
 
-use crate::db::{member::Member, attendance::Attendance};
+use crate::db::{member::Member, attendance::Attendance, member::StreakUpdate};
 
 pub struct MutationRoot;
 
@@ -201,46 +201,63 @@ impl MutationRoot {
         ctx: &Context<'_>,
         id: i32,
         has_sent_update: bool,
-    ) -> Result<Member, sqlx::Error> {
+    ) -> Result<StreakUpdate, sqlx::Error> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
 
-        let member = sqlx::query_as::<_, Member>(
+        let streak_info = sqlx::query_as::<_, StreakUpdate>(
             "
-            SELECT streak, max_streak
-            FROM Member
+            SELECT id, streak, max_streak
+            FROM StreakUpdate
             WHERE id = $1
             "
         )
         .bind(id)
-        .fetch_one(pool.as_ref())
+        .fetch_optional(pool.as_ref())
         .await?;
 
-        let current_streak = member.streak.unwrap_or(0);
-        let max_streak = member.max_streak.unwrap_or(0);
+        match streak_info{
+            Some(mut member) => {
+                let current_streak = member.streak.unwrap_or(0);
+                let max_streak = member.max_streak.unwrap_or(0);
+                let (new_streak, new_max_streak) = if has_sent_update {
+                    let updated_streak = current_streak + 1;
+                    let updated_max_streak = updated_streak.max(max_streak);
+                    (updated_streak, updated_max_streak)
+                } else {
+                    (0, max_streak)
+                };
+                let updated_member = sqlx::query_as::<_, StreakUpdate>(
+                    "
+                    UPDATE StreakUpdate
+                    SET streak = $1, max_streak = $2
+                    WHERE id = $3
+                    RETURNING *
+                    "
+                )
+                .bind(new_streak)
+                .bind(new_max_streak)
+                .bind(id)
+                .fetch_one(pool.as_ref())
+                .await?;
 
-        let (new_streak, new_max_streak) = if has_sent_update {
-            let updated_streak = current_streak + 1;
-            let updated_max_streak = (updated_streak).max(max_streak);
-            (updated_streak, updated_max_streak)
-        }else{
-            (0, max_streak)
-        };
+                Ok(updated_member)
+            },
+            None => {
+                let new_member = sqlx::query_as::<_, StreakUpdate>(
+                    "
+                    INSERT INTO StreakUpdate (id, streak, max_streak)
+                    VALUES ($1, $2, $3)
+                    RETURNING *
+                    "
+                )
+                .bind(id)
+                .bind(0)
+                .bind(0)
+                .fetch_one(pool.as_ref())
+                .await?;
 
-        let updated_member = sqlx::query_as::<_, Member>(
-            "
-            UPDATE Member
-            SET streak = $1, max_streak = $2
-            WHERE id = $3
-            RETURNING *
-            "
-        )
-
-        .bind(new_streak)
-        .bind(new_max_streak)
-        .bind(id)
-        .fetch_one(pool.as_ref())
-        .await?;
-
-        Ok(updated_member)
+                Ok(new_member)
+            }
+        }
     }
 }
