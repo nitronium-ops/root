@@ -42,7 +42,7 @@ cargo shuttle run
 
 ### Documentation
 
-Explore the [API documentation](/docs/docs.md) for detailed information and usage guidelines.
+Explore the [Documentation](/docs/docs.md) for detailed information and usage guidelines.
 
 ---
 
