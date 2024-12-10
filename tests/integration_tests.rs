@@ -1,22 +1,16 @@
-use config::{Config, File, FileFormat};
 use root::db::leaderboard::Leaderboard;
 use root::db::member::Member;
 use root::leaderboard::fetch_stats::{fetch_codeforces_stats, fetch_leetcode_stats};
 use root::leaderboard::update_leaderboard::update_leaderboard;
 use sqlx::{postgres::PgPoolOptions, PgPool};
+use std::env;
 use std::sync::Arc;
 
 pub fn get_database_url() -> String {
-    // Create a configuration instance to read Secrets.toml
-    let settings = Config::builder()
-        .add_source(File::new("Secrets", FileFormat::Toml))
-        .build()
-        .expect("Failed to load Secrets.toml");
-
-    // Retrieve the `DATABASE_URL` from the file
-    settings
-        .get_string("DATABASE_URL")
-        .expect("Missing 'DATABASE_URL' in Secrets.toml")
+    match env::var("TEST_DATABASE_URL") {
+        Ok(db_url) => db_url,
+        Err(_) => "postgres://localhost:5432/default_db".to_string(),
+    }
 }
 
 // Helper function to create a test database connection
@@ -31,22 +25,22 @@ async fn setup_test_db() -> PgPool {
 
 // Helper function to clean up test data
 async fn cleanup_test_data(pool: &PgPool) {
-    // sqlx::query("DELETE FROM leaderboard")
-    //     .execute(pool)
-    //     .await
-    //     .unwrap();
-    // sqlx::query("DELETE FROM leetcode_stats")
-    //     .execute(pool)
-    //     .await
-    //     .unwrap();
-    // sqlx::query("DELETE FROM codeforces_stats")
-    //     .execute(pool)
-    //     .await
-    //     .unwrap();
-    // sqlx::query("DELETE FROM Member")
-    //     .execute(pool)
-    //     .await
-    //     .unwrap();
+    sqlx::query("DELETE FROM leaderboard")
+        .execute(pool)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM leetcode_stats")
+        .execute(pool)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM codeforces_stats")
+        .execute(pool)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM Member")
+        .execute(pool)
+        .await
+        .unwrap();
 }
 
 //test
