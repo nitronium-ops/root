@@ -16,31 +16,75 @@ pub fn get_database_url() -> String {
 // Helper function to create a test database connection
 async fn setup_test_db() -> PgPool {
     let database_url = get_database_url();
-    PgPoolOptions::new()
+    let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&database_url)
         .await
-        .expect("Failed to create test database pool")
+        .expect("Failed to create test database pool");
+
+    // Create tables
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS member (
+            id SERIAL PRIMARY KEY,
+            rollno VARCHAR(20) NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            hostel VARCHAR(100) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            sex VARCHAR(10) NOT NULL,
+            year INT NOT NULL,
+            macaddress VARCHAR(50) NOT NULL,
+            discord_id VARCHAR(255),
+            group_id INT
+        );
+
+        CREATE TABLE IF NOT EXISTS leaderboard (
+            id SERIAL PRIMARY KEY,
+            member_id INT UNIQUE NOT NULL,
+            leetcode_score INT,
+            codeforces_score INT,
+            unified_score INT NOT NULL,
+            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES member(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS leetcode_stats (
+            id SERIAL PRIMARY KEY,
+            member_id INT NOT NULL UNIQUE,
+            leetcode_username VARCHAR(255) NOT NULL,
+            problems_solved INT NOT NULL,
+            easy_solved INT NOT NULL,
+            medium_solved INT NOT NULL,
+            hard_solved INT NOT NULL,
+            contests_participated INT NOT NULL,
+            best_rank INT NOT NULL,
+            total_contests INT NOT NULL,
+            FOREIGN KEY (member_id) REFERENCES member(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS codeforces_stats (
+            id SERIAL PRIMARY KEY,
+            member_id INT NOT NULL UNIQUE,
+            codeforces_handle VARCHAR(255) NOT NULL,
+            codeforces_rating INT NOT NULL,
+            max_rating INT NOT NULL,
+            contests_participated INT NOT NULL,
+            FOREIGN KEY (member_id) REFERENCES member(id)
+        );
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .expect("Failed to create tables in test database");
+    pool
 }
 
 // Helper function to clean up test data
 async fn cleanup_test_data(pool: &PgPool) {
-    sqlx::query("DELETE FROM leaderboard")
+    sqlx::query("TRUNCATE TABLE leaderboard, leetcode_stats, codeforces_stats, member RESTART IDENTITY CASCADE;")
         .execute(pool)
         .await
-        .unwrap();
-    sqlx::query("DELETE FROM leetcode_stats")
-        .execute(pool)
-        .await
-        .unwrap();
-    sqlx::query("DELETE FROM codeforces_stats")
-        .execute(pool)
-        .await
-        .unwrap();
-    sqlx::query("DELETE FROM Member")
-        .execute(pool)
-        .await
-        .unwrap();
+        .expect("Failed to clean up test data");
 }
 
 //test
