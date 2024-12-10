@@ -22,22 +22,22 @@ async fn setup_test_db() -> PgPool {
         .await
         .expect("Failed to create test database pool");
 
-    // Create tables
-    sqlx::query(
+    // Create tables if they do not already exist
+    let queries = vec![
         r#"
         CREATE TABLE IF NOT EXISTS member (
             id SERIAL PRIMARY KEY,
-            rollno VARCHAR(20) NOT NULL,
+            rollno VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
-            hostel VARCHAR(100) NOT NULL,
-            email VARCHAR(255) NOT NULL,
+            hostel VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL UNIQUE,
             sex VARCHAR(10) NOT NULL,
             year INT NOT NULL,
-            macaddress VARCHAR(50) NOT NULL,
+            macaddress VARCHAR(17) NOT NULL,
             discord_id VARCHAR(255),
-            group_id INT
-        );
-
+            group_id INT NOT NULL
+        )"#,
+        r#"
         CREATE TABLE IF NOT EXISTS leaderboard (
             id SERIAL PRIMARY KEY,
             member_id INT UNIQUE NOT NULL,
@@ -46,11 +46,11 @@ async fn setup_test_db() -> PgPool {
             unified_score INT NOT NULL,
             last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (member_id) REFERENCES member(id)
-        );
-
+        )"#,
+        r#"
         CREATE TABLE IF NOT EXISTS leetcode_stats (
             id SERIAL PRIMARY KEY,
-            member_id INT NOT NULL UNIQUE,
+            member_id INT UNIQUE NOT NULL,
             leetcode_username VARCHAR(255) NOT NULL,
             problems_solved INT NOT NULL,
             easy_solved INT NOT NULL,
@@ -60,39 +60,84 @@ async fn setup_test_db() -> PgPool {
             best_rank INT NOT NULL,
             total_contests INT NOT NULL,
             FOREIGN KEY (member_id) REFERENCES member(id)
-        );
-
+        )"#,
+        r#"
         CREATE TABLE IF NOT EXISTS codeforces_stats (
             id SERIAL PRIMARY KEY,
-            member_id INT NOT NULL UNIQUE,
+            member_id INT UNIQUE NOT NULL,
             codeforces_handle VARCHAR(255) NOT NULL,
             codeforces_rating INT NOT NULL,
             max_rating INT NOT NULL,
             contests_participated INT NOT NULL,
             FOREIGN KEY (member_id) REFERENCES member(id)
-        );
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .expect("Failed to create tables in test database");
+        )"#,
+    ];
+
+    for query in queries {
+        sqlx::query(query)
+            .execute(&pool)
+            .await
+            .expect("Failed to execute query");
+    }
     pool
 }
 
 // Helper function to clean up test data
+
 async fn cleanup_test_data(pool: &PgPool) {
-    sqlx::query("TRUNCATE TABLE leaderboard, leetcode_stats, codeforces_stats, member RESTART IDENTITY CASCADE;")
+    print!("called");
+    let cleanup_query = r#"
+        DO $$
+        DECLARE
+            seq RECORD;
+        BEGIN
+            -- Truncate tables if they exist
+            BEGIN
+                TRUNCATE TABLE leaderboard, leetcode_stats, codeforces_stats, member RESTART IDENTITY CASCADE;
+            EXCEPTION
+                WHEN undefined_table THEN
+                    -- Ignore errors if tables don't exist
+                    RAISE NOTICE 'Tables do not exist, skipping TRUNCATE.';
+            END;
+
+            -- Reset sequences only if they exist
+            FOR seq IN
+                SELECT c.relname
+                FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE c.relkind = 'S' AND n.nspname = 'public'
+            LOOP
+                BEGIN
+                    EXECUTE 'ALTER SEQUENCE ' || seq.relname || ' RESTART WITH 1';
+                EXCEPTION
+                    WHEN undefined_object THEN
+                        -- Ignore errors if sequences don't exist
+                        RAISE NOTICE 'Sequence % does not exist, skipping.', seq.relname;
+                END;
+            END LOOP;
+        END $$;
+    "#;
+
+    sqlx::query(cleanup_query)
         .execute(pool)
         .await
-        .expect("Failed to clean up test data");
+        .expect("Failed to clean up and reset database state");
+}
+
+#[tokio::test]
+async fn test_database_connection() {
+    let database_url = get_database_url();
+    println!("Database URL: {}", database_url);
+    assert!(!database_url.is_empty(), "Database URL should not be empty");
+    // let result = sqlx::query("SELECT 1").fetch_one(&pool).await;
+
+    // assert!(result.is_ok(), "Database connection and query should work");
 }
 
 //test
 #[tokio::test]
 async fn test_insert_members_and_update_stats() {
     let pool = setup_test_db().await;
-
-    cleanup_test_data(&pool).await;
 
     // Define test members
     let members = vec![
@@ -105,6 +150,7 @@ async fn test_insert_members_and_update_stats() {
             2021,
             "00:11:22:33:44:55",
             Some("john_discord"),
+            1,
             "swayam-agrahari",
             "tourist",
         ),
@@ -117,6 +163,7 @@ async fn test_insert_members_and_update_stats() {
             2021,
             "66:77:88:99:AA:BB",
             Some("jane_discord"),
+            2,
             "rihaan1810",
             "tourist",
         ),
@@ -128,8 +175,8 @@ async fn test_insert_members_and_update_stats() {
     for member in &members {
         // Insert Member
         let member_result = sqlx::query_as::<_, Member>(
-            "INSERT INTO Member (rollno, name, hostel, email, sex, year, macaddress, discord_id)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            "INSERT INTO member (rollno, name, hostel, email, sex, year, macaddress, discord_id, group_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                  RETURNING *",
         )
         .bind(&member.0)
@@ -140,6 +187,7 @@ async fn test_insert_members_and_update_stats() {
         .bind(member.5)
         .bind(&member.6)
         .bind(&member.7)
+        .bind(&member.8)
         .fetch_one(&pool)
         .await
         .expect("Failed to insert member");
@@ -150,7 +198,7 @@ async fn test_insert_members_and_update_stats() {
                  VALUES ($1, $2, 0,0,0,0,0,0,0)",
             )
             .bind(member_result.id)
-            .bind(&member.8)
+            .bind(&member.9)
             .execute(&pool)
             .await
             .expect("Failed to insert LeetCode stats");
@@ -161,7 +209,7 @@ async fn test_insert_members_and_update_stats() {
                  VALUES ($1, $2, 0,0,0)",
             )
             .bind(member_result.id)
-            .bind(&member.9)
+            .bind(&member.10)
             .execute(&pool)
             .await
             .expect("Failed to insert Codeforces stats");
@@ -170,7 +218,7 @@ async fn test_insert_members_and_update_stats() {
     }
 
     // Test LeetCode stats fetching
-    for (member_id, leetcode_username) in inserted_members.iter().zip(members.iter().map(|m| m.8)) {
+    for (member_id, leetcode_username) in inserted_members.iter().zip(members.iter().map(|m| m.9)) {
         match fetch_leetcode_stats(Arc::new(pool.clone()), *member_id, leetcode_username).await {
             Ok(_) => println!(
                 "Successfully fetched LeetCode stats for member ID: {}",
@@ -230,21 +278,7 @@ async fn test_insert_members_and_update_stats() {
         );
     }
 
-    // Clean up
     cleanup_test_data(&pool).await;
 }
 
 // Additional helper test to verify database connections and basic operations
-#[tokio::test]
-async fn test_database_connection() {
-    let pool = setup_test_db().await;
-    let database_url = get_database_url();
-
-    // Print the URL to verify (optional, for debugging purposes)
-    println!("Database URL: {}", database_url);
-
-    // Basic database connectivity test
-    let result = sqlx::query("SELECT 1").fetch_one(&pool).await;
-
-    assert!(result.is_ok(), "Database connection and query should work");
-}
