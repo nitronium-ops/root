@@ -91,7 +91,7 @@ async fn cleanup_test_data(pool: &PgPool) {
         DECLARE
             seq RECORD;
         BEGIN
-            -- Truncate tables if they exist
+            -- Droppign all the tables for cleanup purpose
             BEGIN
                 TRUNCATE TABLE leaderboard, leetcode_stats, codeforces_stats, member RESTART IDENTITY CASCADE;
             EXCEPTION
@@ -100,7 +100,7 @@ async fn cleanup_test_data(pool: &PgPool) {
                     RAISE NOTICE 'Tables do not exist, skipping TRUNCATE.';
             END;
 
-            -- Reset sequences only if they exist
+            -- Postgres stores the sequences of unique id outside of respective tables, so need to delete those too. 
             FOR seq IN
                 SELECT c.relname
                 FROM pg_class c
@@ -125,13 +125,11 @@ async fn cleanup_test_data(pool: &PgPool) {
 }
 
 #[tokio::test]
+// Additional helper test to verify database connections and basic operations
 async fn test_database_connection() {
     let database_url = get_database_url();
     println!("Database URL: {}", database_url);
     assert!(!database_url.is_empty(), "Database URL should not be empty");
-    // let result = sqlx::query("SELECT 1").fetch_one(&pool).await;
-
-    // assert!(result.is_ok(), "Database connection and query should work");
 }
 
 //test
@@ -241,8 +239,6 @@ async fn test_insert_members_and_update_stats() {
             ),
             Err(e) => {
                 println!("Error fetching Codeforces stats: {:?}", e);
-                // Uncomment to fail test on fetch error
-                // panic!("Failed to fetch Codeforces stats")
             }
         }
     }
@@ -280,5 +276,3 @@ async fn test_insert_members_and_update_stats() {
 
     cleanup_test_data(&pool).await;
 }
-
-// Additional helper test to verify database connections and basic operations
