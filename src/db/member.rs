@@ -1,6 +1,5 @@
-use sqlx::FromRow;
 use async_graphql::SimpleObject;
-
+use sqlx::FromRow;
 
 //Struct for the Member table
 #[derive(FromRow, SimpleObject)]
@@ -15,7 +14,7 @@ pub struct Member {
     pub year: i32,
     pub macaddress: String,
     pub discord_id: Option<String>,
-    pub group_id: Option<i32>,
+    pub group_id: i32,
 }
 
 #[derive(FromRow, SimpleObject)]
