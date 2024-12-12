@@ -19,9 +19,20 @@ jobs:
       - name: Set TEST_DATABASE_URL
         run: echo "TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/test_db" >> $GITHUB_ENV
 
+      - name: Install Rust and Cargo
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source $HOME/.cargo/env
+
+      - name: Run Tests
+        run: cargo test
+      
+
+
       - uses: shuttle-hq/deploy-action@main
         with:
           name: "root"
+          no-test: "true"
           deploy-key: ${{ secrets.SHUTTLE_API_KEY }}
           secrets: |
             ROOT_SECRET = '${{ secrets.ROOT_SECRET }}'
