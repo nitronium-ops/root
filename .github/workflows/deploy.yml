@@ -13,6 +13,7 @@ jobs:
       - uses: shuttle-hq/deploy-action@main
         with:
           name: "root"
+          no-test: "true"
           deploy-key: ${{ secrets.SHUTTLE_API_KEY }}
           secrets: |
             ROOT_SECRET = '${{ secrets.ROOT_SECRET }}'
