@@ -93,6 +93,106 @@ pub async fn scheduled_task(pool: Arc<PgPool>) {
                     Ok(_) => println!("Leaderboard updated."),
                     Err(e) => eprintln!("Failed to update leaderboard: {:?}", e),
                 }
+
+                let present_attendance = sqlx::query_scalar::<_, i64>(
+                    r#"
+                        SELECT COUNT(*)
+                        FROM Attendance
+                        WHERE id = $1
+                        AND is_present = true
+                        AND date = (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') - INTERVAL '1 day'
+                    "#,
+                )
+                .bind(member.id)
+                .fetch_one(pool.as_ref())
+                .await;
+                
+                match present_attendance {
+                    Ok(1) => {
+                        let existing_streak = sqlx::query_scalar::<_, i32>(
+                            r#"
+                                SELECT streak
+                                FROM AttendanceStreak
+                                WHERE member_id = $1
+                                AND month = date_trunc('month', CURRENT_DATE::date)
+                            "#,
+                        )
+                        .bind(member.id)
+                        .fetch_optional(pool.as_ref())
+                        .await;
+                
+                        match existing_streak {
+                            Ok(Some(streak)) => {
+                                let update_streak = sqlx::query(
+                                    r#"
+                                        UPDATE AttendanceStreak
+                                        SET streak = $1
+                                        WHERE member_id = $2
+                                        AND month = date_trunc('month', CURRENT_DATE::date)
+                                    "#,
+                                )
+                                .bind(streak + 1)
+                                .bind(member.id)
+                                .execute(pool.as_ref())
+                                .await;
+                
+                                match update_streak {
+                                    Ok(_) => println!("Attendance streak incremented for member ID: {}", member.id),
+                                    Err(e) => eprintln!(
+                                        "Failed to update Attendance streak for member ID: {}: {:?}",
+                                        member.id, e
+                                    ),
+                                }
+                            }
+                            Ok(None) => {
+                                let insert_streak = sqlx::query(
+                                    r#"
+                                        INSERT INTO AttendanceStreak (member_id, month, streak)
+                                        VALUES ($1, date_trunc('month', CURRENT_DATE::date), $2)
+                                    "#,
+                                )
+                                .bind(member.id)
+                                .bind(1)
+                                .execute(pool.as_ref())
+                                .await;
+                
+                                match insert_streak {
+                                    Ok(_) => println!("Attendance streak created for member ID: {}", member.id),
+                                    Err(e) => eprintln!(
+                                        "Failed to create Attendance streak for member ID: {}: {:?}",
+                                        member.id, e
+                                    ),
+                                }
+                            }
+                            Err(e) => eprintln!("Error checking existing streak for member ID: {}: {:?}", member.id, e),
+                        }
+                    }
+                    Ok(0) => {
+                        let ensure_streak = sqlx::query(
+                            r#"
+                                INSERT INTO AttendanceStreak (member_id, month, streak)
+                                VALUES ($1, date_trunc('month', CURRENT_DATE::date), $2)
+                                ON CONFLICT (member_id, month) DO NOTHING
+                            "#,
+                        )
+                        .bind(member.id)
+                        .bind(0)
+                        .execute(pool.as_ref())
+                        .await;
+                
+                        match ensure_streak {
+                            Ok(_) => println!("Attendance streak ensured for member ID: {}", member.id),
+                            Err(e) => eprintln!(
+                                "Failed to ensure Attendance streak for member ID: {}: {:?}",
+                                member.id, e
+                            ),
+                        }
+                    }
+                    Ok(_) => {
+                        eprintln!("Unexpected attendance value for member ID: {}", member.id);
+                    }
+                    Err(e) => eprintln!("Error checking attendance for member ID: {}: {:?}", member.id, e),
+                }
             }
         }
         Err(e) => eprintln!("Failed to fetch members: {:?}", e),

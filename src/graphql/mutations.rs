@@ -11,7 +11,7 @@ use sha2::Sha256;
 
 type HmacSha256 = Hmac<Sha256>;
 
-use crate::db::{attendance::Attendance, leaderboard::{CodeforcesStats, LeetCodeStats}, member::Member, member::StreakUpdate};
+use crate::db::{attendance::Attendance, leaderboard::{CodeforcesStats, LeetCodeStats}, member::Member, member::StreakUpdate, projects::ActiveProjects};
 
 pub struct MutationRoot;
 
@@ -313,4 +313,49 @@ impl MutationRoot {
             }
         }
     }
+
+    async fn set_active_project(
+        &self,
+        ctx: &Context<'_>,
+        id: i32,
+        project_name:String,
+    ) -> Result<ActiveProjects,sqlx::Error> {
+        let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
+
+        let active_project = sqlx::query_as::<_,ActiveProjects>(
+            "
+            INSERT INTO ActiveProjects (member_id,project_title)
+            VALUES ($1,$2)
+            RETURNING *
+            "
+        )
+        .bind(id)
+        .bind(project_name)
+        .fetch_one(pool.as_ref())
+        .await?;
+
+        Ok(active_project)
+    }
+
+    async fn remove_active_project(
+        &self,
+        ctx: &Context<'_>,
+        project_id: i32,
+    ) -> Result<ActiveProjects,sqlx::Error> {
+        let pool = ctx.data::<Arc<PgPool>>().expect("Pool not found in context");
+
+        let active_project = sqlx::query_as::<_,ActiveProjects>(
+            "
+            DELETE FROM ActiveProjects
+            WHERE id = $1
+            RETURNING *
+            "
+        )
+        .bind(project_id)
+        .fetch_one(pool.as_ref())
+        .await?;
+
+        Ok(active_project)
+    }
+
 }
