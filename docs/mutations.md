@@ -5,6 +5,8 @@
 - [editMember](#editmember)
 - [markAttendance](#markattendance)
 - [addAttendance](#addattendance)
+- [setActiveProject](#setactiveproject)
+- [removeActiveProject](#re)
 
 ---
 
@@ -141,4 +143,46 @@ date: NaiveDate!
 timein: NaiveTime!
 timeout: NaiveTime!
 isPresent: Boolean!
+```
+---
+
+### setActiveProject
+Set active project for a member.
+
+#### GraphQL Mutation
+```graphql
+mutation {
+    setActiveProject(id:0,projectName:"project_name") {
+        id
+        memberId
+        projectTitle
+    }
+}
+```
+
+#### Arguments (all required)
+```graphql
+id: Int!
+projectName: String!
+```
+
+---
+
+### removeActiveProject
+Remove active project for a member.
+
+#### GraphQL Mutation
+```graphql
+mutation {
+    removeActiveProject(projectId:0) {
+        id
+        memberId
+        projectTitle
+    }
+}
+```
+
+#### Arguments (all required)
+```graphql
+projectId: Int!
 ```
