@@ -63,7 +63,6 @@ async fn main(
         .with_state(state)
         .layer(cors);
     task::spawn(async move {
-        scheduled_task(pool.clone()).await;
         schedule_task_at_midnight(pool.clone()).await; // Call the function after 10 seconds
     });
     Ok(router.into())
