@@ -6,40 +6,6 @@
 ### Overview
 **Root** is a backend for managing all club related info; most other projects will be getting or publishing their data to root.
 
-### Setup Instructions
-
-#### Prerequisites
-1. Ensure you have Rust installed. Use `rustup` for easy installation.  
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   source $HOME/.cargo/env
-   ```
-2. Install the Shuttle CLI.
-   ```bash
-   cargo install shuttle-cli
-   ```
-
-3. Install Docker. Check [this](https://docs.docker.com/desktop/setup/install/linux/) out for instructions.
-
-#### Clone the Repository
-```bash
-git clone https://github.com/amfoss/root.git
-cd root
-```
-
-#### Set up Secrets
-Create a `Secrets.toml` file in the root directory with the secret key
-```
-ROOT_SECRET='secret_key'
-```
-
-#### Run Locally
-```bash
-cargo shuttle run
-```
-
----
-
 ### Documentation
 
 Explore the [Documentation](/docs/docs.md) for detailed information and usage guidelines.
