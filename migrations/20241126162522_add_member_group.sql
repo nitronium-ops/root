@@ -1,1 +1,0 @@
-ALTER TABLE Member ADD COLUMN group_id INT;
