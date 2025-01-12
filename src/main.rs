@@ -6,7 +6,6 @@ use async_graphql_axum::GraphQL;
 use axum::{routing::get, Router};
 use chrono::{Local, NaiveTime};
 use root::attendance::scheduled_task::scheduled_task;
-use shuttle_runtime::SecretStore;
 use sqlx::PgPool;
 use std::time::Duration;
 use std::{env, sync::Arc};
@@ -25,21 +24,16 @@ struct MyState {
     secret_key: String,
 }
 
-//Main method
-#[shuttle_runtime::main]
-async fn main(
-    #[shuttle_shared_db::Postgres] pool: PgPool,
-    #[shuttle_runtime::Secrets] secrets: SecretStore,
-) -> shuttle_axum::ShuttleAxum {
+fn main() -> {
+    // TODO: Explain?
     env::set_var("PGOPTIONS", "-c ignore_version=true");
 
-    sqlx::migrate!()
-        .run(&pool)
-        .await
-        .expect("Failed to run migrations");
+    // sqlx::migrate!()
+    //    .run(&pool)
+    //  .await
+    //  .expect("Failed to run migrations.");
 
     let pool = Arc::new(pool);
-    let secret_key = secrets.get("ROOT_SECRET").expect("ROOT_SECRET not found");
     let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(pool.clone())
         .data(secret_key.clone()) //
@@ -65,7 +59,6 @@ async fn main(
     task::spawn(async move {
         schedule_task_at_midnight(pool.clone()).await; // Call the function after 10 seconds
     });
-    Ok(router.into())
 }
 
 //Ticker for calling the scheduled task

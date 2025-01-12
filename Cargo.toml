@@ -9,9 +9,6 @@ async-graphql-axum = "7.0.6"
 axum = "0.7.3"
 chrono = "0.4.38"
 serde = { version = "1.0.188", features = ["derive"] }
-shuttle-axum = "0.46.0"
-shuttle-runtime = "0.46.0"
-shuttle-shared-db = { version = "0.46.0", features = ["postgres", "sqlx"] }
 sqlx = { version = "0.7.1", features = ["chrono"] }
 tokio = { version = "1.28.2", features = ["macros"] }                       # For async tests
 hmac = "0.12.1"
