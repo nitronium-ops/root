@@ -1,5 +1,6 @@
 use axum::{routing::get, Router};
 use tower_http::cors::{Any, CorsLayer};
+use tracing::info;
 
 #[tokio::main]
 async fn main() {
@@ -7,25 +8,33 @@ async fn main() {
     // 9/1/25: TODO: Explain?
     // env::set_var("PGOPTIONS", "-c ignore_version=true");
 
-    // sqlx::migrate!()
-    //    .run(&pool)
-    //  .await
-    //  .expect("Failed to run migrations.");
-
     // let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
     //  .data(pool.clone())
     //  .data(secret_key.clone())
     //  .finish();
 
     tracing_subscriber::fmt::init();
+    dotenv::dotenv().ok();
+
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await
+        .expect("Pool must be initialized properly.");
+
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .expect("Failed to run migrations.");
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(tower_http::cors::Any)
         .allow_headers(tower_http::cors::Any);
 
+    info!("Starting Root...");
     let router = Router::new().route("/", get(root)).layer(cors);
-
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, router).await.unwrap();
 
