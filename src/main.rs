@@ -1,12 +1,6 @@
 use axum::{routing::get, Router};
 use tower_http::cors::{Any, CorsLayer};
 
-// #[derive(Clone)]
-// struct MyState {
-//     pool: Arc<PgPool>,
-//     secret_key: String,
-// }
-
 #[tokio::main]
 async fn main() {
     // 12/1/25: Going to assume this is only necessary for shuttle
@@ -18,16 +12,10 @@ async fn main() {
     //  .await
     //  .expect("Failed to run migrations.");
 
-    // let pool = Arc::new(pool);
     // let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
     //  .data(pool.clone())
     //  .data(secret_key.clone())
     //  .finish();
-
-    // let state = MyState {
-    //  pool: pool.clone(),
-    //  secret_key: secret_key.clone(),
-    // };
 
     tracing_subscriber::fmt::init();
 
