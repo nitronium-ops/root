@@ -6,6 +6,7 @@ use axum::{
     routing::get,
     Router,
 };
+use chrono_tz::Asia::Kolkata;
 use graphql::{mutations::MutationRoot, query::QueryRoot};
 use root::attendance::daily_task;
 use sqlx::PgPool;
@@ -51,6 +52,8 @@ async fn main() {
         .data(secret_key)
         .finish();
 
+    // This thread will sleep until it's time to run the daily task
+    // Also takes ownership of pool
     tokio::task::spawn(async {
         run_daily_task_at_midnight(pool).await;
     });
@@ -67,13 +70,15 @@ async fn main() {
             get(graphiql).post_service(GraphQL::new(schema.clone())),
         )
         .layer(cors);
+
+    // TODO: Replace hardcoded address
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, router).await.unwrap();
 }
 
 async fn run_daily_task_at_midnight(pool: Arc<PgPool>) {
     loop {
-        let now = chrono::Local::now();
+        let now = chrono::Local::now().with_timezone(&Kolkata);
         let next_midnight = (now + chrono::Duration::days(1))
             .date_naive()
             .and_hms_opt(0, 0, 0)
