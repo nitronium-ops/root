@@ -4,7 +4,7 @@ use sqlx::PgPool;
 use std::sync::Arc;
 
 use crate::{
-    db::{
+    models::{
         leaderboard::{CodeforcesStats, LeetCodeStats},
         member::Member,
     },

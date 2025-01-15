@@ -11,7 +11,7 @@ use sha2::Sha256;
 
 type HmacSha256 = Hmac<Sha256>;
 
-use crate::db::{attendance::Attendance, leaderboard::{CodeforcesStats, LeetCodeStats}, member::Member, member::StreakUpdate, projects::ActiveProjects};
+use crate::models::{attendance::Attendance, leaderboard::{CodeforcesStats, LeetCodeStats}, member::Member, member::StreakUpdate, projects::ActiveProjects};
 
 pub struct MutationRoot;
 

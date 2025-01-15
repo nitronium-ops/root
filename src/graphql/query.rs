@@ -1,9 +1,9 @@
 use async_graphql::{Context, Object};
 use chrono::NaiveDate;
-use root::db::{attendance::{AttendanceStreak, AttendanceSummary, DailyCount, MemberAttendance}, projects::ActiveProjects};
+use root::models::{attendance::{AttendanceStreak, AttendanceSummary, DailyCount, MemberAttendance}, projects::ActiveProjects};
 use sqlx::PgPool;
 use std::sync::Arc;
-use crate::db::{
+use crate::models::{
     attendance::Attendance, leaderboard::{CodeforcesStatsWithName, LeaderboardWithMember, LeetCodeStatsWithName}, member::{Member, StreakUpdate}
 };
 
