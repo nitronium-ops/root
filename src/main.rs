@@ -4,6 +4,7 @@ use async_graphql_axum::GraphQL;
 use axum::{http::{HeaderValue, Method}, routing::get, Router};
 use graphql::{mutations::MutationRoot, query::QueryRoot};
 use tower_http::cors::{Any, CorsLayer};
+use std::sync::Arc;
 use tracing::info;
 
 mod graphql;
@@ -24,9 +25,8 @@ async fn main() {
     let secret_key = std::env::var("ROOT_SECRET").expect("ROOT_SECRET must be set.");
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
     let pool = sqlx::postgres::PgPoolOptions::new()
-        .min_connections(2) // Maintain at least two connections, one for amD and one for Home
-        .max_connections(3) // It should be pretty unlikely that amD, Home and the web interface is
-        // used simultaneously
+        .min_connections(2) // Maintain at least two connections, one for amD and one for Home. It should be
+        .max_connections(3) // pretty unlikely that amD, Home and the web interface is used simultaneously
         .connect(&database_url)
         .await
         .expect("Pool must be initialized properly.");
@@ -36,10 +36,17 @@ async fn main() {
         .await
         .expect("Failed to run migrations.");
 
+    // Wrap pool in an Arc to share across threads
+    let pool = Arc::new(pool);
+
     let schema = async_graphql::Schema::build(QueryRoot, MutationRoot, EmptySubscription)
-        .data(pool)
+        .data(pool.clone())
         .data(secret_key)
         .finish();
+
+    tokio::task::spawn(async {
+        schedule_task_at_midnight(pool).await;
+    });
 
     let cors = CorsLayer::new()
         .allow_origin(HeaderValue::from_static("https://home.amfoss.in")) // Only allow requests from Home
@@ -55,10 +62,6 @@ async fn main() {
         .layer(cors);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, router).await.unwrap();
-
-    // task::spawn(async move {
-    //  schedule_task_at_midnight(pool.clone()).await;
-    // });
 }
 
 // Sleep till midnight, then execute the task, repeat.
