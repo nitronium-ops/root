@@ -16,12 +16,17 @@ async fn main() {
     // env::set_var("PGOPTIONS", "-c ignore_version=true");
 
     tracing_subscriber::fmt::init();
-    dotenv::dotenv().ok();
+    // Currently, we need the DATABASE_URL to be loaded in through the .env.
+    // In the future, if we use any other configuration (say Github Secrets), we
+    // can allow dotenv() to err.
+    dotenv::dotenv().expect("Failed to load .env file.");
 
     let secret_key = std::env::var("ROOT_SECRET").expect("ROOT_SECRET must be set.");
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
     let pool = sqlx::postgres::PgPoolOptions::new()
-        .max_connections(5)
+        .min_connections(2) // Maintain at least two connections, one for amD and one for Home
+        .max_connections(3) // It should be pretty unlikely that amD, Home and the web interface is
+        // used simultaneously
         .connect(&database_url)
         .await
         .expect("Pool must be initialized properly.");
@@ -37,8 +42,8 @@ async fn main() {
         .finish();
 
     let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(tower_http::cors::Any)
+        .allow_origin(HeaderValue::from_static("https://home.amfoss.in")) // Only allow requests from Home
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers(tower_http::cors::Any);
 
     info!("Starting Root...");
