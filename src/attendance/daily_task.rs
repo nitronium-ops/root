@@ -16,9 +16,10 @@ pub async fn execute_daily_task(pool: Arc<PgPool>) {
         .await;
 
     match members {
+        // Add additional daily tasks such as leaderboard updates to the Ok(members) arm
         Ok(members) => update_attendance(members, &*pool).await,
         // TODO: Handle this
-        Err(e) => (),
+        Err(_) => (),
     };
 }
 
@@ -29,6 +30,7 @@ async fn update_attendance(members: Vec<Member>, pool: &PgPool) {
     let today = Local::now().with_timezone(&Kolkata).date_naive();
 
     for member in members {
+        // Insert blank rows for each member
         let attendance = sqlx::query(
             "INSERT INTO Attendance (member_id, date, is_present, time_in, time_out) 
                      VALUES ($1, $2, $3, $4, $5)
@@ -56,12 +58,13 @@ async fn update_attendance(members: Vec<Member>, pool: &PgPool) {
                 );
             }
         }
+        // This could have been called in `execute_daily_task()` but that would require us to loop through members twice.
+        // Whether or not inserting attendance failed, Root will attempt to update AttendanceSummary. This can potentially fail too since insertion failed earlier. However, these two do not depend on each other and one of them failing is no reason to avoid trying the other.
         update_attendance_summary(member.member_id, pool).await;
     }
 }
 
-/// Checks if the member was present yesterday, and if so, increments the `days_attended` value. Otherwise, do
-/// nothing.
+/// Checks if the member was present yesterday, and if so, increments the `days_attended` value. Otherwise, do nothing.
 async fn update_attendance_summary(member_id: i32, pool: &PgPool) {
     trace!("Updating summary for member #{}", member_id);
     let today = chrono::Local::now().with_timezone(&Kolkata).date_naive();

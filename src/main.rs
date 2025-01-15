@@ -1,4 +1,3 @@
-use crate::routes::graphiql;
 use async_graphql::EmptySubscription;
 use async_graphql_axum::GraphQL;
 use axum::{
@@ -64,10 +63,11 @@ async fn main() {
         .allow_headers(tower_http::cors::Any);
 
     info!("Starting Root...");
+    // TODO: Avoid exposing the GraphiQL interface in prod.
     let router = Router::new()
         .route(
             "/",
-            get(graphiql).post_service(GraphQL::new(schema.clone())),
+            get(routes::graphiql).post_service(GraphQL::new(schema.clone())),
         )
         .layer(cors);
 
@@ -76,6 +76,7 @@ async fn main() {
     axum::serve(listener, router).await.unwrap();
 }
 
+/// Sleep till midnight, then run the 'execute_daily_task' function.
 async fn run_daily_task_at_midnight(pool: Arc<PgPool>) {
     loop {
         let now = chrono::Local::now().with_timezone(&Kolkata);
