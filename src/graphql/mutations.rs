@@ -14,7 +14,6 @@ use root::models::{
     attendance::Attendance,
     leaderboard::{CodeforcesStats, LeetCodeStats},
     member::Member,
-    member::StreakUpdate,
     projects::ActiveProjects,
 };
 
@@ -205,61 +204,6 @@ impl MutationRoot {
         Ok(attendance)
     }
 
-    //here when user changes the handle, it just updates the handle in the database without updating the other values till midnight
-
-    async fn add_or_update_leetcode_username(
-        &self,
-        ctx: &Context<'_>,
-        member_id: i32,
-        username: String,
-    ) -> Result<LeetCodeStats, sqlx::Error> {
-        let pool = ctx
-            .data::<Arc<PgPool>>()
-            .expect("Pool not found in context");
-
-        let result = sqlx::query_as::<_, LeetCodeStats>(
-            "
-            INSERT INTO leetcode_stats (member_id, leetcode_username, problems_solved, easy_solved, medium_solved, hard_solved, contests_participated, best_rank, total_contests)
-            VALUES ($1, $2, 0, 0, 0, 0, 0, 0, 0)
-            ON CONFLICT (member_id) DO UPDATE
-            SET leetcode_username = $2
-            RETURNING *
-            "
-        )
-        .bind(member_id)
-        .bind(username)
-        .fetch_one(pool.as_ref())
-        .await?;
-
-        Ok(result)
-    }
-
-    async fn add_or_update_codeforces_handle(
-        &self,
-        ctx: &Context<'_>,
-        member_id: i32,
-        handle: String,
-    ) -> Result<CodeforcesStats, sqlx::Error> {
-        let pool = ctx
-            .data::<Arc<PgPool>>()
-            .expect("Pool not found in context");
-
-        let result = sqlx::query_as::<_, CodeforcesStats>(
-            "
-            INSERT INTO codeforces_stats (member_id, codeforces_handle, codeforces_rating, max_rating, contests_participated)
-            VALUES ($1, $2, 0, 0, 0)
-            ON CONFLICT (member_id) DO UPDATE
-            SET codeforces_handle = $2
-            RETURNING *
-            "
-        )
-        .bind(member_id)
-        .bind(handle)
-        .fetch_one(pool.as_ref())
-        .await?;
-
-        Ok(result)
-    }
     async fn update_streak(
         &self,
         ctx: &Context<'_>,
@@ -325,53 +269,5 @@ impl MutationRoot {
                 Ok(new_member)
             }
         }
-    }
-
-    async fn set_active_project(
-        &self,
-        ctx: &Context<'_>,
-        id: i32,
-        project_name: String,
-    ) -> Result<ActiveProjects, sqlx::Error> {
-        let pool = ctx
-            .data::<Arc<PgPool>>()
-            .expect("Pool not found in context");
-
-        let active_project = sqlx::query_as::<_, ActiveProjects>(
-            "
-            INSERT INTO ActiveProjects (member_id,project_title)
-            VALUES ($1,$2)
-            RETURNING *
-            ",
-        )
-        .bind(id)
-        .bind(project_name)
-        .fetch_one(pool.as_ref())
-        .await?;
-
-        Ok(active_project)
-    }
-
-    async fn remove_active_project(
-        &self,
-        ctx: &Context<'_>,
-        project_id: i32,
-    ) -> Result<ActiveProjects, sqlx::Error> {
-        let pool = ctx
-            .data::<Arc<PgPool>>()
-            .expect("Pool not found in context");
-
-        let active_project = sqlx::query_as::<_, ActiveProjects>(
-            "
-            DELETE FROM ActiveProjects
-            WHERE id = $1
-            RETURNING *
-            ",
-        )
-        .bind(project_id)
-        .fetch_one(pool.as_ref())
-        .await?;
-
-        Ok(active_project)
     }
 }
