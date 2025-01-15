@@ -1,33 +1,17 @@
 use async_graphql::SimpleObject;
 use sqlx::FromRow;
 
-//Struct for the Member table
 #[derive(FromRow, SimpleObject)]
-
 pub struct Member {
-    pub id: i32,
-    pub rollno: String,
+    pub member_id: i32,
+    pub roll_no: String,
     pub name: String,
-    pub hostel: String,
     pub email: String,
     pub sex: String,
     pub year: i32,
-    pub macaddress: String,
-    pub discord_id: Option<String>,
-    pub group_id: Option<i32>,
-}
-
-#[derive(FromRow, SimpleObject)]
-pub struct MemberExtended {
-    pub member: Member,
-    pub project_title: Option<String>,
-    pub attendance_count: Option<String>,
-    pub update_count: Option<String>,
-}
-
-#[derive(FromRow, SimpleObject)]
-pub struct StreakUpdate {
-    pub id: i32,
-    pub streak: Option<i32>,
-    pub max_streak: Option<i32>,
+    pub hostel: String,
+    pub mac_address: String,
+    pub discord_id: String,
+    pub group_id: i32,
+    pub created_at: chrono::NaiveDateTime,
 }

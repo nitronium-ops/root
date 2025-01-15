@@ -1,40 +1,22 @@
 use async_graphql::SimpleObject;
-use chrono::{NaiveDate, NaiveTime};
 use sqlx::FromRow;
 
-//Struct for the Attendance table
-#[derive(FromRow, SimpleObject)]
+#[derive(FromRow, SimpleObject, Debug)]
 pub struct Attendance {
-    pub id: i32,
-    pub date: NaiveDate,
-    pub timein: NaiveTime,
-    pub timeout: NaiveTime,
-    pub is_present: bool,
-}
-
-#[derive(FromRow, SimpleObject)]
-pub struct AttendanceStreak {
-    pub id: i32,
+    pub attendance_id: i32,
     pub member_id: i32,
-    pub month: NaiveDate,
-    pub streak: i32,
+    pub date: chrono::NaiveDate,
+    pub is_present: bool,
+    pub time_in: Option<chrono::NaiveTime>,
+    pub time_out: Option<chrono::NaiveTime>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
 
-#[derive(FromRow, SimpleObject)]
+#[derive(FromRow, SimpleObject, Debug)]
 pub struct AttendanceSummary {
-    pub max_days: i64,
-    pub member_attendance: Vec<MemberAttendance>,
-    pub daily_count: Vec<DailyCount>,
-}
-
-#[derive(FromRow, SimpleObject)]
-pub struct MemberAttendance {
-    pub id: i32,
-    pub present_days: i64,
-}
-
-#[derive(FromRow, SimpleObject)]
-pub struct DailyCount {
-    pub date: NaiveDate,
-    pub count: i64,
+    pub member_id: i32,
+    pub year: i32,
+    pub month: i32,
+    pub days_attended: i32,
 }
