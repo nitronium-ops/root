@@ -1,10 +1,17 @@
 use crate::routes::graphiql;
 use async_graphql::EmptySubscription;
 use async_graphql_axum::GraphQL;
-use axum::{http::{HeaderValue, Method}, routing::get, Router};
+use axum::{
+    http::{HeaderValue, Method},
+    routing::get,
+    Router,
+};
 use graphql::{mutations::MutationRoot, query::QueryRoot};
-use tower_http::cors::{Any, CorsLayer};
+use root::attendance::daily_task;
+use sqlx::PgPool;
 use std::sync::Arc;
+use tokio::time::sleep_until;
+use tower_http::cors::CorsLayer;
 use tracing::info;
 
 mod graphql;
@@ -45,7 +52,7 @@ async fn main() {
         .finish();
 
     tokio::task::spawn(async {
-        schedule_task_at_midnight(pool).await;
+        run_daily_task_at_midnight(pool).await;
     });
 
     let cors = CorsLayer::new()
@@ -64,20 +71,19 @@ async fn main() {
     axum::serve(listener, router).await.unwrap();
 }
 
-// Sleep till midnight, then execute the task, repeat.
-// async fn schedule_task_at_midnight(pool: Arc<PgPool>) {
-//     loop {
-//         let now = Local::now();
-//         let next_midnight = (now + chrono::Duration::days(1))
-//             .date_naive()
-//             .and_hms_opt(0, 0, 0)
-//             .unwrap();
-//
-//         let duration_until_midnight = next_midnight.signed_duration_since(now.naive_local());
-//         let sleep_duration =
-//             tokio::time::Duration::from_secs(duration_until_midnight.num_seconds() as u64);
-//
-//         sleep_until(Instant::now() + sleep_duration).await;
-//         scheduled_task(pool.clone()).await;
-//    }
-// }
+async fn run_daily_task_at_midnight(pool: Arc<PgPool>) {
+    loop {
+        let now = chrono::Local::now();
+        let next_midnight = (now + chrono::Duration::days(1))
+            .date_naive()
+            .and_hms_opt(0, 0, 0)
+            .unwrap();
+
+        let duration_until_midnight = next_midnight.signed_duration_since(now.naive_local());
+        let sleep_duration =
+            tokio::time::Duration::from_secs(duration_until_midnight.num_seconds() as u64);
+
+        sleep_until(tokio::time::Instant::now() + sleep_duration).await;
+        daily_task::execute_daily_task(pool.clone()).await;
+    }
+}
