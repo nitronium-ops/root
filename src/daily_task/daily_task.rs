@@ -38,7 +38,7 @@ async fn execute_daily_task(pool: Arc<PgPool>) {
         // Add additional daily tasks such as leaderboard updates to the Ok(members) arm
         Ok(members) => update_attendance(members, &*pool).await,
         // TODO: Handle this
-        Err(_) => (),
+        Err(e) => error!("Failed to fetch members: {:?}", e),
     };
 }
 
