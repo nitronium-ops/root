@@ -1,15 +1,34 @@
 use chrono::{Datelike, Local, NaiveDate, NaiveTime};
 use chrono_tz::Asia::Kolkata;
 use sqlx::PgPool;
+use tokio::time::sleep_until;
 use std::sync::Arc;
 use tracing::{debug, error};
 
 use crate::models::member::Member;
 
+/// Continuously sleep till midnight, then run the 'execute_daily_task' function.
+pub async fn run_daily_task_at_midnight(pool: Arc<PgPool>) {
+    loop {
+        let now = chrono::Local::now().with_timezone(&Kolkata);
+        let next_midnight = (now + chrono::Duration::days(1))
+            .date_naive()
+            .and_hms_opt(0, 0, 0)
+            .unwrap();
+
+        let duration_until_midnight = next_midnight.signed_duration_since(now.naive_local());
+        let sleep_duration =
+            tokio::time::Duration::from_secs(duration_until_midnight.num_seconds() as u64);
+
+        sleep_until(tokio::time::Instant::now() + sleep_duration).await;
+        execute_daily_task(pool.clone()).await;
+    }
+}
+
 /// This function does a number of things, including:
 /// * Insert new attendance records everyday for [`presense`](https://www.github.com/amfoss/presense) to update them later in the day.
 /// * Update the AttendanceSummary table
-pub async fn execute_daily_task(pool: Arc<PgPool>) {
+async fn execute_daily_task(pool: Arc<PgPool>) {
     // Members is queried outside of each function to avoid repetition
     let members = sqlx::query_as::<_, Member>("SELECT * FROM Member")
         .fetch_all(&*pool)
