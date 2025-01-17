@@ -46,6 +46,7 @@ pub struct AttendanceSummaryInfo {
 pub struct MarkAttendanceInput {
     pub member_id: i32,
     pub date: NaiveDate,
-    pub time_in: Option<NaiveTime>,
-    pub time_out: Option<NaiveTime>,
+    pub time_in: NaiveTime,
+    pub time_out: NaiveTime,
+    pub hmac_signature: String,
 }

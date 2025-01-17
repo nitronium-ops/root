@@ -4,8 +4,12 @@ use async_graphql::{Context, Object, Result};
 use chrono::Local;
 use chrono_tz::Asia::Kolkata;
 use sqlx::PgPool;
+use hmac::{Hmac,Mac};
+use sha2::Sha256;
 
 use crate::models::attendance::{Attendance, MarkAttendanceInput};
+
+type HmacSha256 = Hmac<Sha256>;
 
 #[derive(Default)]
 pub struct AttendanceMutations;
@@ -21,6 +25,19 @@ impl AttendanceMutations {
         let pool = ctx
             .data::<Arc<PgPool>>()
             .expect("Pool not found in context");
+
+        let secret_key = ctx.data::<String>().expect("ROOT_SECRET must be found in context");
+
+        let mut mac = HmacSha256::new_from_slice(secret_key.as_bytes()).expect("HMAC can take key of any size");
+        let message = format!("{}{}{}{}", input.member_id, input.date, input.time_in, input.time_out);
+        mac.update(message.as_bytes());
+
+        let expected_signature = mac.finalize().into_bytes();
+        let received_signature = hex::decode(input.hmac_signature)?;
+
+        if expected_signature.as_slice() != received_signature.as_slice() {
+            return Err(async_graphql::Error::new("HMAC verification failed"));
+        }
 
         let now = Local::now().with_timezone(&Kolkata).date_naive();
         let attendance = sqlx::query_as::<_, Attendance>(
