@@ -41,6 +41,7 @@ pub struct AttendanceSummaryInfo {
     pub days_attended: i32,
 }
 
+/// This struct is used to deserialize the input recieved for mutations on attendance.
 #[derive(InputObject)]
 pub struct MarkAttendanceInput {
     pub member_id: i32,

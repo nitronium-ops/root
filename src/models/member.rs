@@ -27,6 +27,7 @@ pub struct Member {
     pub created_at: NaiveDateTime,
 }
 
+/// This struct is used to deserialize the input recieved for mutations on Memeber.
 #[derive(InputObject)]
 pub struct CreateMemberInput {
     pub roll_no: String,
