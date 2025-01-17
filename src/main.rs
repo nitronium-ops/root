@@ -47,15 +47,32 @@ async fn main() {
     // can allow dotenv() to err.
     dotenv::dotenv().expect("Failed to load .env file.");
 
-    // Used to check if it's in production
+    // RUST_ENV is used to check if it's in production to avoid unnecessary logging and exposing the
+    // graphiql interface. Make sure to set it to "production" before deployment.
     let env = std::env::var("RUST_ENV").unwrap_or_else(|_| "development".to_string());
+    // ROOT_SECRET is used to cryptographically verify the origin of attendance updation requests.
     let secret_key = std::env::var("ROOT_SECRET").expect("ROOT_SECRET must be set.");
+    // DATABASE_URL provides the connection string for the PostgreSQL database.
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
     // BIND_ADDRESS is used to determine the IP address for the server's socket to bind to.
     let bind_addr = std::env::var("BIND_ADDRESS").expect("BIND_ADDRESS must be set.");
 
-    if env == "development" {
+    if env == "production" {
         tracing_subscriber::registry()
+            // In production, no need to write to stdout, write directly to file.
+            .with(
+                fmt::layer()
+                    .pretty()
+                    .with_ansi(false) // ANSI encodings make it pretty but unreadable in the raw file.
+                    .with_writer(std::fs::File::create("root.log").unwrap()),
+            )
+            // Allow only [`info`] and above events.
+            .with(EnvFilter::new("info"))
+            .init();
+        info!("Running in production mode.")
+    } else {
+        tracing_subscriber::registry()
+            // Write to both stdout and file in development.
             .with(fmt::layer().pretty().with_writer(std::io::stdout))
             .with(
                 fmt::layer()
@@ -63,25 +80,15 @@ async fn main() {
                     .with_ansi(false)
                     .with_writer(std::fs::File::create("root.log").unwrap()),
             )
+            // Allow all events.
             .with(EnvFilter::new("trace"))
             .init();
         info!("Running in development mode.");
-    } else {
-        tracing_subscriber::registry()
-            .with(
-                fmt::layer()
-                    .pretty()
-                    .with_ansi(false)
-                    .with_writer(std::fs::File::create("root.log").unwrap()),
-            )
-            .with(EnvFilter::new("info"))
-            .init();
-        info!("Running in production mode.")
     }
 
     let pool = sqlx::postgres::PgPoolOptions::new()
         .min_connections(2) // Maintain at least two connections, one for amD and one for Home. It should be
-        .max_connections(3) // pretty unlikely that amD, Home and the web interface is used simultaneously
+        .max_connections(3) // pretty unlikely that amD, Home and the web interface is used simultaneously.
         .connect(&database_url)
         .await
         .expect("Pool must be initialized properly.");
@@ -91,7 +98,7 @@ async fn main() {
         .await
         .expect("Failed to run migrations.");
 
-    // Wrap pool in an Arc to share across threads
+    // Wrap pool in an Arc to share across threads.
     let pool = Arc::new(pool);
 
     let schema =
@@ -100,14 +107,16 @@ async fn main() {
             .data(secret_key)
             .finish();
 
-    // This thread will sleep until it's time to run the daily task
-    // Also takes ownership of pool
+    // This thread will sleep until it's time to run the daily task.
+    // Also takes ownership of pool.
     tokio::task::spawn(async {
         run_daily_task_at_midnight(pool).await;
     });
 
     let cors = CorsLayer::new()
-        .allow_origin(HeaderValue::from_static("https://home.amfoss.in")) // Only allow requests from Home
+        // Home should be the only website that accesses the API, bots and scripts do not trigger CORS AFAIK.
+        // This lets us restrict who has access to what in the API on the Home frontend.
+        .allow_origin(HeaderValue::from_static("https://home.amfoss.in"))
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers(tower_http::cors::Any);
 
@@ -124,7 +133,7 @@ async fn main() {
     axum::serve(listener, router).await.unwrap();
 }
 
-/// Sleep till midnight, then run the 'execute_daily_task' function.
+/// Continuously sleep till midnight, then run the 'execute_daily_task' function.
 async fn run_daily_task_at_midnight(pool: Arc<PgPool>) {
     loop {
         let now = chrono::Local::now().with_timezone(&Kolkata);
