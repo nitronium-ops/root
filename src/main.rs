@@ -51,6 +51,8 @@ async fn main() {
     let env = std::env::var("RUST_ENV").unwrap_or_else(|_| "development".to_string());
     let secret_key = std::env::var("ROOT_SECRET").expect("ROOT_SECRET must be set.");
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
+    // BIND_ADDRESS is used to determine the IP address for the server's socket to bind to.
+    let bind_addr = std::env::var("BIND_ADDRESS").expect("BIND_ADDRESS must be set.");
 
     if env == "development" {
         tracing_subscriber::registry()
@@ -118,8 +120,7 @@ async fn main() {
         )
         .layer(cors);
 
-    // TODO: Replace hardcoded address
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind(bind_addr).await.unwrap();
     axum::serve(listener, router).await.unwrap();
 }
 
