@@ -32,7 +32,7 @@ CREATE TABLE Attendance (
                 (is_present = FALSE AND time_in IS NULL AND time_out IS NULL)
         ),
         CHECK (is_present = FALSE OR date <= CURRENT_DATE),
-        CHECK (time_out IS NULL OR time_out > time_in),
+        CHECK (time_out IS NULL OR time_out >= time_in),
         UNIQUE (member_id, date)
 );
 
@@ -58,7 +58,7 @@ CREATE TABLE AttendanceSummary (
         primary key (member_id, year, month)
 );
 
-CREATE TABLE StatusUpdateStreaks (
+CREATE TABLE StatusUpdateStreak (
         member_id INT REFERENCES Member(member_id) ON DELETE CASCADE,
         current_streak int NOT NULL DEFAULT 0,
         max_streak INT NOT NULL,

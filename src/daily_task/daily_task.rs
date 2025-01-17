@@ -2,7 +2,7 @@ use chrono::{Datelike, Local, NaiveDate, NaiveTime};
 use chrono_tz::Asia::Kolkata;
 use sqlx::PgPool;
 use std::sync::Arc;
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error};
 
 use crate::models::member::Member;
 
@@ -26,7 +26,7 @@ pub async fn execute_daily_task(pool: Arc<PgPool>) {
 // We need to add a record for every member because otherwise [`Presense`](https://www.github.com/presense) will only add present members to the DB, and we will have to JOIN Members and Attendance records for the day to get the absent members. In exchange for increased storage use, we get simpler queries for Home which needs the data for every member for every day so far. But as of Jan 2025, there are less than 50 members in the club and thus storage really shouldn't be an issue.
 /// Inserts new attendance records everyday for [`presense`](https://www.github.com/amfoss/presense) to update them later in the day and updates the AttendanceSummary table to keep track of monthly streaks.
 async fn update_attendance(members: Vec<Member>, pool: &PgPool) {
-    info!("Updating attendance...");
+    debug!("Updating attendance...");
     let today = Local::now().with_timezone(&Kolkata).date_naive();
 
     for member in members {
@@ -66,7 +66,7 @@ async fn update_attendance(members: Vec<Member>, pool: &PgPool) {
 
 /// Checks if the member was present yesterday, and if so, increments the `days_attended` value. Otherwise, do nothing.
 async fn update_attendance_summary(member_id: i32, pool: &PgPool) {
-    trace!("Updating summary for member #{}", member_id);
+    debug!("Updating summary for member #{}", member_id);
     let today = chrono::Local::now().with_timezone(&Kolkata).date_naive();
     let yesterday = today.checked_sub_signed(chrono::Duration::days(1)).unwrap(); // Get yesterday's date
 
