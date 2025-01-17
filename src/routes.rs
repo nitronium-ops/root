@@ -16,13 +16,13 @@ pub fn setup_router(
     is_dev: bool,
 ) -> Router {
     let router = Router::new()
-        .route_service("/", GraphQL::new(schema))
+        .route_service("/", GraphQL::new(schema.clone()))
         .layer(cors);
 
     if is_dev {
         // Add GraphiQL playground only in development mode
         tracing::info!("GraphiQL playground enabled at /graphiql");
-        router.route("/graphiql", get(graphiql))
+        router.route("/graphiql", get(graphiql).post_service(GraphQL::new(schema)))
     } else {
         router
     }
