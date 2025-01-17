@@ -1,5 +1,4 @@
-use async_graphql::MergedObject;
-use async_graphql::{EmptyMutation, EmptySubscription};
+use async_graphql::{EmptySubscription, MergedObject};
 use async_graphql_axum::GraphQL;
 use axum::{
     http::{HeaderValue, Method},
@@ -7,23 +6,18 @@ use axum::{
     Router,
 };
 use chrono_tz::Asia::Kolkata;
-use daily_task::daily_task::execute_daily_task;
-use graphql::mutations::attendance_mutations::AttendanceMutations;
-use graphql::{
-    mutations::member_mutations::MemberMutations,
-    queries::{
-        attendance_queries::AttendanceQueries, member_queries::MemberQueries,
-        streak_queries::StreakQueries,
-    },
-};
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::time::sleep_until;
 use tower_http::cors::CorsLayer;
 use tracing::info;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+
+use daily_task::execute_daily_task;
+use graphql::{
+    mutations::{AttendanceMutations, MemberMutations, StreakMutations},
+    queries::{AttendanceQueries, MemberQueries, StreakQueries},
+};
 
 /// Daily task contains the function that is executed daily at midnight, using the thread spawned in main().
 pub mod daily_task;
@@ -38,12 +32,13 @@ pub mod routes;
 #[derive(MergedObject, Default)]
 struct Query(MemberQueries, AttendanceQueries, StreakQueries);
 
+// Mutations work the same as Queries, sub-modules for each relation in the DB. However, all methods are directly defined on these sub-module structs. But they use slightly modified versions of the [`models`], marked by the Input in the name, to get input.
 #[derive(MergedObject, Default)]
-struct Mutations(MemberMutations, AttendanceMutations);
+struct Mutations(MemberMutations, AttendanceMutations, StreakMutations);
 
 #[tokio::main]
 async fn main() {
-    // 12/1/25: Going to assume this is only necessary for shuttle
+    // 12/1/25: Going to assume this is only necessary for shuttle.
     // 9/1/25: TODO: Explain?
     // env::set_var("PGOPTIONS", "-c ignore_version=true");
 
