@@ -22,7 +22,10 @@ pub fn setup_router(
     if is_dev {
         // Add GraphiQL playground only in development mode
         tracing::info!("GraphiQL playground enabled at /graphiql");
-        router.route("/graphiql", get(graphiql).post_service(GraphQL::new(schema)))
+        router.route(
+            "/graphiql",
+            get(graphiql).post_service(GraphQL::new(schema)),
+        )
     } else {
         router
     }

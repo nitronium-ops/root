@@ -66,7 +66,9 @@ async fn main() {
     let router = setup_router(schema, cors, config.env == "development");
 
     info!("Starting Root...");
-    let listener = tokio::net::TcpListener::bind(config.bind_address).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(config.bind_address)
+        .await
+        .unwrap();
     axum::serve(listener, router).await.unwrap();
 }
 
