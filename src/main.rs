@@ -49,9 +49,6 @@ impl Config {
 
 #[tokio::main]
 async fn main() {
-    // 12/1/25: Going to assume this is only necessary for shuttle.
-    // 9/1/25: TODO: Explain?
-    // env::set_var("PGOPTIONS", "-c ignore_version=true");
     let config = Config::from_env();
     setup_tracing(&config.env);
 
