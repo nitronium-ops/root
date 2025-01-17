@@ -15,24 +15,24 @@ pub fn setup_router(
     cors: CorsLayer,
     is_dev: bool,
 ) -> Router {
-    let mut router = Router::new()
-        .route_service("/graphql", GraphQL::new(schema.clone()))
+    let router = Router::new()
+        .route_service("/", GraphQL::new(schema))
         .layer(cors);
 
     if is_dev {
         // Add GraphiQL playground only in development mode
-        router = router.route("/", get(graphiql));
+        tracing::info!("GraphiQL playground enabled at /graphiql");
+        router.route("/graphiql", get(graphiql))
+    } else {
+        router
     }
-
-    router
 }
 
-// TODO: We do not want to expose GraphiQL unless in dev.
 /// Returns the built-in GraphQL playground from async_graphql.
 async fn graphiql() -> impl IntoResponse {
     Html(
         GraphiQLSource::build()
-            .endpoint("/")
+            .endpoint("/graphiql")
             .subscription_endpoint("/ws")
             .finish(),
     )
