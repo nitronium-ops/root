@@ -1,0 +1,8 @@
+Dockerfile
+target
+docs
+
+.dockerignore
+.env.sample
+.gitignore
+.git

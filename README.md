@@ -16,14 +16,9 @@ Root is our club's backend, responsible for collecting and distributing data fro
 
 2. Configure environment:
    ```bash
-   touch .env
+   cp .env.sample .env
    ```
-
-The following environment variables are required:
-* DATABASE_URL: Connection string to your DB.
-* RUST_ENV: Use "development" or "production" as applicable.
-* ROOT_SECRET: Used to verify the origin of mutation requests on attendance. Ask the maintainers for it.
-* BIND_ADDRESS: The IP address for `axum` to serve to. Typically `0.0.0.0:3000` for local deployments.
+   - Make sure that you have a postgres database running with the specified credentials.
 
 3. Setup database:
    ```bash
