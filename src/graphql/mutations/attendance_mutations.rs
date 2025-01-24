@@ -29,7 +29,7 @@ impl AttendanceMutations {
         let secret_key = ctx.data::<String>().expect("ROOT_SECRET must be found in context");
 
         let mut mac = HmacSha256::new_from_slice(secret_key.as_bytes()).expect("HMAC can take key of any size");
-        let message = format!("{}{}{}{}", input.member_id, input.date, input.time_in, input.time_out);
+        let message = format!("{}{}", input.member_id, input.date);
         mac.update(message.as_bytes());
 
         let expected_signature = mac.finalize().into_bytes();
@@ -41,15 +41,16 @@ impl AttendanceMutations {
 
         let now = Local::now().with_timezone(&Kolkata).date_naive();
         let attendance = sqlx::query_as::<_, Attendance>(
-            "INSERT INTO Attendance (member_id, date, is_present, time_in, time_out, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $6) RETURNING *",
+            "UPDATE Attendance SET time_in = CASE
+                WHEN time_in IN NULL THEN $1
+                ELSE time_in END,
+             time_out = $1
+             WHERE id = $2 AND date = $3 RETURNING *
+            ",
         )
+        .bind(now)
         .bind(input.member_id)
         .bind(input.date)
-        .bind(true)
-        .bind(input.time_in)
-        .bind(input.time_out)
-        .bind(now)
         .fetch_one(pool.as_ref())
         .await?;
 
