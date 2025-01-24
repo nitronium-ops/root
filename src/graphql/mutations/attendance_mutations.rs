@@ -3,9 +3,9 @@ use std::sync::Arc;
 use async_graphql::{Context, Object, Result};
 use chrono::Local;
 use chrono_tz::Asia::Kolkata;
-use sqlx::PgPool;
-use hmac::{Hmac,Mac};
+use hmac::{Hmac, Mac};
 use sha2::Sha256;
+use sqlx::PgPool;
 
 use crate::models::attendance::{Attendance, MarkAttendanceInput};
 
@@ -26,9 +26,12 @@ impl AttendanceMutations {
             .data::<Arc<PgPool>>()
             .expect("Pool not found in context");
 
-        let secret_key = ctx.data::<String>().expect("ROOT_SECRET must be found in context");
+        let secret_key = ctx
+            .data::<String>()
+            .expect("ROOT_SECRET must be found in context");
 
-        let mut mac = HmacSha256::new_from_slice(secret_key.as_bytes()).expect("HMAC can take key of any size");
+        let mut mac = HmacSha256::new_from_slice(secret_key.as_bytes())
+            .expect("HMAC can take key of any size");
         let message = format!("{}{}", input.member_id, input.date);
         mac.update(message.as_bytes());
 
@@ -41,8 +44,8 @@ impl AttendanceMutations {
 
         let now = Local::now().with_timezone(&Kolkata).date_naive();
         let attendance = sqlx::query_as::<_, Attendance>(
-            "UPDATE Attendance SET time_in = CASE
-                WHEN time_in IN NULL THEN $1
+            "UPDATE Attendance SET time_in = CASE 
+                WHEN time_in IN NULL THEN $1 
                 ELSE time_in END,
              time_out = $1
              WHERE id = $2 AND date = $3 RETURNING *
