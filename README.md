@@ -1,58 +1,80 @@
 <div align="center">
   <h1>Root</h1>
-  <p>a backend to manage all club information</p>
+  <p>A GraphQL backend for managing club member information</p>
 </div>
 
-### Overview
-**Root** is a backend for managing all club related info; most other projects will be getting or publishing their data to root.
-
-### Setup Instructions
-
-#### Prerequisites
-1. Ensure you have Rust installed. Use `rustup` for easy installation.  
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   source $HOME/.cargo/env
-   ```
-2. Install the Shuttle CLI.
-   ```bash
-   cargo install shuttle-cli
-   ```
-
-3. Install Docker. Check [this](https://docs.docker.com/desktop/setup/install/linux/) out for instructions.
-
-#### Clone the Repository
-```bash
-git clone https://github.com/amfoss/root.git
-cd root
-```
-
-#### Set up Secrets
-Create a `Secrets.toml` file in the root directory with the secret key
-```
-ROOT_SECRET='secret_key'
-```
-
-#### Run Locally
-```bash
-cargo shuttle run
-```
-
 ---
 
-### Documentation
+Root is our club's backend, responsible for collecting and distributing data from and to all the other services including [Home](https://www.github.com/amfoss/home), [amD](https://www.github.com/amfoss/amd) and [Presense](https://www.github.com/amfoss/presense). The idea is to have all our data easily available in one place and to let every other end-user applications to be standalone. This ensures there's no single point of failure for all our infrastructure (as was the case with our previous CMS). Though Root going down would definitely cause a few features to stop working on the other apps.
 
-Explore the [Documentation](/docs/docs.md) for detailed information and usage guidelines.
+# Quick Setup
 
----
+1. Install prerequisites:
+   - Rust (latest stable should work fine)
+   - PostgreSQL
+   - SQLx CLI: `cargo install sqlx-cli`
 
-### How to Contribute
+2. Configure environment:
+   ```bash
+   touch .env
+   ```
 
-1. Fork the repository and clone it to your local machine.
-2. Set up the project by following the installation instructions above.
-3. Identify an issue or feature you'd like to work on, and create an issue to track it.
-4. Develop the patch or feature, ensuring it is thoroughly tested.
-5. Submit a pull request, referencing the relevant issue number.
+The following environment variables are required:
+* DATABASE_URL: Connection string to your DB.
+* RUST_ENV: Use "development" or "production" as applicable.
+* ROOT_SECRET: Used to verify the origin of mutation requests on attendance. Ask the maintainers for it.
+* BIND_ADDRESS: The IP address for `axum` to serve to. Typically `0.0.0.0:3000` for local deployments.
 
-### License
+3. Setup database:
+   ```bash
+   sqlx database create
+   sqlx migrate run
+   ```
+
+4. Run server:
+   ```bash
+   cargo run
+   ```
+
+GraphQL playground should be available at `http://localhost:8000/graphiql` as long as it's in development mode.
+
+# Documentation
+
+See the [documentation](docs/docs.md) for the API reference, database schema and other detailed documentation.  
+
+# Contributing
+
+## Reporting Issues
+
+If you encounter a bug, please check existing issues first to avoid duplicates. If none exist, create a new issue with the following details:
+
+*  Title: Concise summary.
+* Description: A detailed description of the issue.
+*  Steps to Reproduce: If it's a bug, include steps to reproduce.
+* Expected and Actual Behavior: Describe what you expected and what actually happened.
+
+## Suggesting Features
+
+We welcome new ideas! Please open an issue titled "Feature Request: `<Feature Name>`" and provide:
+
+* Problem: What problem does this feature solve?
+* Solution: Describe how you envision it working.
+* Alternatives Considered: Mention any alternatives you've considered.
+
+## Submitting Code Changes
+
+If you'd like to fix a bug, add a feature, or improve code quality:
+
+* Check the open issues to avoid redundancy.
+* Open a draft PR if you'd like feedback on an ongoing contribution.
+
+## Coding Standards
+
+* Follow Rust Conventions: Use idiomatic Rust patterns. Use `cargo fmt` and `cargo clippy` to format and lint your code.
+* Modularity: Write modular, reusable functions. Avoid monolithic code.
+* Descriptive Naming: Use descriptive names for variables, functions, and types.
+* Don't worry too much about rules, it just needs to be pretty. Most editors have built-in tools to do this for you. 
+
+# License
+
 This project is licensed under GNU General Public License V3. You are welcome to adapt it, make it yours. Just make sure that you credit us too.
