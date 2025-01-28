@@ -24,15 +24,12 @@ struct Config {
     env: String,
     secret_key: String,
     database_url: String,
-    bind_address: String,
+    port: String,
 }
 
 impl Config {
     fn from_env() -> Self {
-        // Currently, we need the DATABASE_URL to be loaded in through the .env.
-        // In the future, if we use any other configuration (say Github Secrets), we
-        // can allow dotenv() to err.
-        dotenv::dotenv().expect(".ENV file must be set up.");
+        let _ = dotenv::dotenv();
         Self {
             // RUST_ENV is used to check if it's in production to avoid unnecessary logging and exposing the
             // graphiql interface. Make sure to set it to "production" before deployment.
@@ -41,8 +38,8 @@ impl Config {
             secret_key: std::env::var("ROOT_SECRET").expect("ROOT_SECRET must be set."),
             // DATABASE_URL provides the connection string for the PostgreSQL database.
             database_url: std::env::var("DATABASE_URL").expect("DATABASE_URL must be set."),
-            // BIND_ADDRESS is used to determine the IP address for the server's socket to bind to.
-            bind_address: std::env::var("BIND_ADDRESS").expect("BIND_ADDRESS must be set."),
+            // ROOT_PORT is used to determine the port that root binds to
+            port: std::env::var("ROOT_PORT").expect("ROOT_PORT must be set."),
         }
     }
 }
@@ -63,7 +60,7 @@ async fn main() {
     let router = setup_router(schema, cors, config.env == "development");
 
     info!("Starting Root...");
-    let listener = tokio::net::TcpListener::bind(config.bind_address)
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port))
         .await
         .unwrap();
     axum::serve(listener, router).await.unwrap();
