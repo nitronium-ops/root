@@ -35,8 +35,11 @@ impl StreakMutations {
         let query = sqlx::query_as::<_, Streak>(
             "
         INSERT INTO StatusUpdateStreak VALUES ($1, 0, 0) 
-        ON CONFLICT (member_id) DO UPDATE 
-            SET current_streak = 0
+        ON CONFLICT (member_id) DO UPDATE
+            SET current_streak = CASE
+                WHEN StatusUpdateStreak.current_streak > 0 THEN 0
+                ELSE StatusUpdateStreak.current_streak - 1 
+            END
         RETURNING *",
         )
         .bind(input.member_id);
