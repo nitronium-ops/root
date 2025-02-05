@@ -129,7 +129,7 @@ fn build_graphql_schema(
 /// Abstraction over making the CORSLayer.
 fn setup_cors() -> CorsLayer {
     let origins: [HeaderValue; 2] = [
-        "127.0.0.1".parse().unwrap(),
+        "http://127.0.0.1:3000".parse().unwrap(),
         "https://home.amfoss.in".parse().unwrap(),
     ];
 
