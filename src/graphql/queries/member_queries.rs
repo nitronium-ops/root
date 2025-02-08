@@ -88,41 +88,38 @@ impl MemberQueries {
 impl Member {
     async fn attendance(&self, ctx: &Context<'_>) -> Vec<AttendanceInfo> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool must be in context.");
-        let query = sqlx::query_as::<_, AttendanceInfo>(
+
+        sqlx::query_as::<_, AttendanceInfo>(
             "SELECT date, is_present, time_in, time_out FROM Attendance WHERE member_id = $1",
         )
         .bind(self.member_id)
         .fetch_all(pool.as_ref())
         .await
-        .unwrap_or_default();
-
-        query
+        .unwrap_or_default()
     }
 
     #[graphql(name = "attendanceSummary")]
     async fn attendance_summary(&self, ctx: &Context<'_>) -> Vec<AttendanceSummaryInfo> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool must be in context.");
-        let query = sqlx::query_as::<_, AttendanceSummaryInfo>(
+
+        sqlx::query_as::<_, AttendanceSummaryInfo>(
             "SELECT year, month, days_attended FROM AttendanceSummary WHERE member_id = $1",
         )
         .bind(self.member_id)
         .fetch_all(pool.as_ref())
         .await
-        .unwrap_or_default();
-
-        query
+        .unwrap_or_default()
     }
 
     async fn streak(&self, ctx: &Context<'_>) -> Vec<StatusUpdateStreakInfo> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool must be in context.");
-        let query = sqlx::query_as::<_, StatusUpdateStreakInfo>(
+
+        sqlx::query_as::<_, StatusUpdateStreakInfo>(
             "SELECT current_streak, max_streak FROM StatusUpdateStreak WHERE member_id = $1",
         )
         .bind(self.member_id)
         .fetch_all(pool.as_ref())
         .await
-        .unwrap_or_default();
-
-        query
+        .unwrap_or_default()
     }
 }
