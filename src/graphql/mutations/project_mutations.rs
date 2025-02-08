@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_graphql::{Context, Error, Object, Result};
+use async_graphql::{Context, Object, Result};
 use sqlx::PgPool;
 
 use crate::models::project::{Project, SetProjectInput};
