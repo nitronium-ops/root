@@ -13,7 +13,7 @@ pub async fn run_daily_task_at_midnight(pool: Arc<PgPool>) {
         let now = chrono::Local::now().with_timezone(&Kolkata);
         let next_midnight = (now + chrono::Duration::days(1))
             .date_naive()
-            .and_hms_opt(0, 0, 0)
+            .and_hms_opt(0, 30, 0)
             .unwrap();
 
         let duration_until_midnight = next_midnight.signed_duration_since(now.naive_local());
