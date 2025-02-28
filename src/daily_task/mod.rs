@@ -1,22 +1,32 @@
-use chrono::{Datelike, Local, NaiveDate, NaiveTime};
+use chrono::{Datelike, NaiveDate, NaiveTime};
 use chrono_tz::Asia::Kolkata;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::time::sleep_until;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use crate::models::member::Member;
 
 /// Continuously sleep till midnight, then run the 'execute_daily_task' function.
 pub async fn run_daily_task_at_midnight(pool: Arc<PgPool>) {
     loop {
-        let now = chrono::Local::now().with_timezone(&Kolkata);
-        let next_midnight = (now + chrono::Duration::days(1))
-            .date_naive()
-            .and_hms_opt(0, 0, 0)
-            .unwrap();
+        let now = chrono::Utc::now().with_timezone(&Kolkata);
+        let naive_midnight =
+            NaiveTime::from_hms_opt(00, 30, 00).expect("Hardcoded time must be valid");
+        let today_midnight = now
+            .with_time(naive_midnight)
+            .single()
+            .expect("Hardcoded time must be valid");
 
-        let duration_until_midnight = next_midnight.signed_duration_since(now.naive_local());
+        let next_midnight = if now >= today_midnight {
+            today_midnight + chrono::Duration::days(1)
+        } else {
+            today_midnight
+        };
+        debug!("next_midnight: {}", next_midnight);
+
+        let duration_until_midnight = next_midnight.signed_duration_since(now);
+        info!("Sleeping for {}", duration_until_midnight.num_seconds());
         let sleep_duration =
             tokio::time::Duration::from_secs(duration_until_midnight.num_seconds() as u64);
 
@@ -45,8 +55,8 @@ async fn execute_daily_task(pool: Arc<PgPool>) {
 // We need to add a record for every member because otherwise [`Presense`](https://www.github.com/presense) will only add present members to the DB, and we will have to JOIN Members and Attendance records for the day to get the absent members. In exchange for increased storage use, we get simpler queries for Home which needs the data for every member for every day so far. But as of Jan 2025, there are less than 50 members in the club and thus storage really shouldn't be an issue.
 /// Inserts new attendance records everyday for [`presense`](https://www.github.com/amfoss/presense) to update them later in the day and updates the AttendanceSummary table to keep track of monthly streaks.
 async fn update_attendance(members: Vec<Member>, pool: &PgPool) {
-    debug!("Updating attendance...");
-    let today = Local::now().with_timezone(&Kolkata).date_naive();
+    let today = chrono::Utc::now().with_timezone(&Kolkata).date_naive();
+    debug!("Updating attendance on {}", today);
 
     for member in members {
         // Insert blank rows for each member
@@ -86,8 +96,8 @@ async fn update_attendance(members: Vec<Member>, pool: &PgPool) {
 /// Checks if the member was present yesterday, and if so, increments the `days_attended` value. Otherwise, do nothing.
 async fn update_attendance_summary(member_id: i32, pool: &PgPool) {
     debug!("Updating summary for member #{}", member_id);
-    let today = chrono::Local::now().with_timezone(&Kolkata).date_naive();
-    let yesterday = today.checked_sub_signed(chrono::Duration::days(1)).unwrap(); // Get yesterday's date
+    let today = chrono::Utc::now().with_timezone(&Kolkata).date_naive();
+    let yesterday = today.pred_opt().expect("Time must be valid");
 
     // Check if the member was present yesterday
     let was_present_yesterday = sqlx::query_scalar::<_, bool>(
@@ -126,7 +136,7 @@ async fn update_days_attended(member_id: i32, today: NaiveDate, pool: &PgPool) {
     let month: i32 = (today.month0() + 1) as i32;
     let year: i32 = today.year_ce().1 as i32;
 
-    // Check if there’s an existing summary for the current month
+    // Check if there's an existing summary for the current month
     let existing_days_attended = sqlx::query_scalar::<_, i32>(
         r#"
             SELECT days_attended
