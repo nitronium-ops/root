@@ -1,6 +1,8 @@
 use async_graphql::EmptySubscription;
 use axum::http::{HeaderValue, Method};
+use chrono::FixedOffset;
 use sqlx::PgPool;
+use time::UtcOffset;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use tracing::info;
@@ -68,11 +70,14 @@ async fn main() {
 
 /// Abstraction over initializing the global subscriber for tracing depending on whether it's in production or dev.
 fn setup_tracing(env: &str) {
+    let kolkata_offset = UtcOffset::from_hms(5, 30, 0).expect("Hardcoded offset must be correct");
+    let timer = fmt::time::OffsetTime::new(kolkata_offset, time::format_description::well_known::Rfc2822);
     if env == "production" {
         tracing_subscriber::registry()
             // In production, no need to write to stdout, write directly to file.
             .with(
                 fmt::layer()
+                    .event_format(fmt::format().with_timer(timer.clone()))
                     .pretty()
                     .with_ansi(false) // ANSI encodings make it pretty but unreadable in the raw file.
                     .with_writer(std::fs::File::create("root.log").unwrap()),
@@ -84,9 +89,10 @@ fn setup_tracing(env: &str) {
     } else {
         tracing_subscriber::registry()
             // Write to both stdout and file in development.
-            .with(fmt::layer().pretty().with_writer(std::io::stdout))
+            .with(fmt::layer().event_format(fmt::format().with_timer(timer.clone())).pretty().with_writer(std::io::stdout))
             .with(
                 fmt::layer()
+                    .event_format(fmt::format().with_timer(timer.clone()))
                     .pretty()
                     .with_ansi(false)
                     .with_writer(std::fs::File::create("root.log").unwrap()),

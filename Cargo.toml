@@ -7,7 +7,7 @@ edition = "2021"
 async-graphql = { version = "7.0.15", features = ["chrono"] }
 async-graphql-axum = "7.0.6"
 axum = "0.8.1"
-chrono = "0.4.38"
+chrono = { version = "0.4.38", features = ["clock"] }
 serde = { version = "1.0.188", features = ["derive"] }
 sqlx = { version = "0.8.3", features = ["chrono", "postgres", "runtime-tokio"] }
 tokio = { version = "1.28.2", features = ["default", "macros", "rt-multi-thread"] }                       # For async tests
@@ -21,5 +21,6 @@ serde_json = "1.0"
 reqwest = { version = "0.12.12", features = ["json"] }
 config = "0.15"
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "time", "fmt", "std"] }
 dotenv = "0.15.0"
+time = { version = "0.3.37", features = ["formatting"] }
