@@ -44,13 +44,16 @@ async fn execute_daily_task(pool: Arc<PgPool>) {
         .await;
 
     match members {
-        Ok(members) => update_attendance(members, &pool).await,
+        Ok(members) => {
+            update_attendance(&members, &pool).await;
+            update_status_history(&members, &pool).await;
+        }
         // TODO: Handle this
         Err(e) => error!("Failed to fetch members: {:?}", e),
     };
 }
 
-async fn update_attendance(members: Vec<Member>, pool: &PgPool) {
+async fn update_attendance(members: &Vec<Member>, pool: &PgPool) {
     #[allow(deprecated)]
     let today = chrono::Utc::now()
         .with_timezone(&Kolkata)
@@ -197,6 +200,43 @@ async fn update_days_attended(member_id: i32, today: NaiveDate, pool: &PgPool) {
                 "Error checking or updating streak for member ID {}: {:?}",
                 member_id, e
             );
+        }
+    }
+}
+
+async fn update_status_history(members: &Vec<Member>, pool: &PgPool) {
+    #[allow(deprecated)]
+    let today = chrono::Utc::now()
+        .with_timezone(&Kolkata)
+        .date()
+        .naive_local();
+    debug!("Updating Status Update History on {}", today);
+
+    for member in members {
+        let attendance = sqlx::query(
+            "INSERT INTO StatusUpdateHistory (member_id, date, is_updated) 
+                     VALUES ($1, $2, $3)
+                     ON CONFLICT (member_id, date) DO NOTHING",
+        )
+        .bind(member.member_id)
+        .bind(today)
+        .bind(false)
+        .execute(pool)
+        .await;
+
+        match attendance {
+            Ok(_) => {
+                debug!(
+                    "Status update record added for member ID: {}",
+                    member.member_id
+                );
+            }
+            Err(e) => {
+                error!(
+                    "Failed to insert status update history for member ID: {}: {:?}",
+                    member.member_id, e
+                );
+            }
         }
     }
 }
