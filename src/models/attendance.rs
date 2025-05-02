@@ -58,3 +58,11 @@ pub struct AttendanceWithMember {
     pub year: i32,
     pub group_id: i32,
 }
+
+#[derive(SimpleObject, FromRow)]
+pub struct AbsentsWithMember {
+    pub member_id: i32,
+    pub absent_days: i64,
+    pub name: String,
+    pub year: i32,
+}

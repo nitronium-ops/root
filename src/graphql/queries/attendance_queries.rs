@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
-use crate::models::attendance::{Attendance, AttendanceWithMember};
+use crate::models::attendance::{AbsentsWithMember, Attendance, AttendanceWithMember};
 use async_graphql::{Context, Object, Result};
+use chrono::Datelike;
 use chrono::NaiveDate;
 use sqlx::PgPool;
 
@@ -36,6 +37,42 @@ impl AttendanceQueries {
              WHERE att.date = $1",
         )
         .bind(date)
+        .fetch_all(pool.as_ref())
+        .await?;
+
+        Ok(records)
+    }
+
+    async fn absents_by_month(
+        &self,
+        ctx: &Context<'_>,
+        date: NaiveDate,
+    ) -> Result<Vec<AbsentsWithMember>> {
+        let pool = ctx.data::<Arc<PgPool>>().expect("Pool must be in context.");
+
+        let end_date = date
+            .with_day(1)
+            .unwrap()
+            .with_month(date.month() + 1)
+            .unwrap();
+
+        let records = sqlx::query_as::<_, AbsentsWithMember>(
+            "SELECT mem.name, mem.year, att.member_id,
+                COUNT(*) AS absent_days
+            FROM attendance att
+            JOIN member mem ON att.member_id = mem.member_id
+            WHERE
+                att.is_present = FALSE
+                AND att.date >= $1
+                AND att.date < $2
+            GROUP BY
+                att.member_id, mem.name, mem.year
+            ORDER BY
+                absent_days DESC, mem.name
+            ",
+        )
+        .bind(date)
+        .bind(end_date)
         .fetch_all(pool.as_ref())
         .await?;
 
