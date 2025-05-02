@@ -4,6 +4,7 @@ use sqlx::FromRow;
 
 #[derive(Enum, Copy, Clone, Eq, PartialEq, sqlx::Type)]
 #[sqlx(type_name = "sex_type")]
+#[derive(Debug)]
 pub enum Sex {
     M,
     F,
@@ -12,6 +13,7 @@ pub enum Sex {
 
 #[derive(SimpleObject, FromRow)]
 #[graphql(complex)]
+#[derive(Debug)]
 pub struct Member {
     pub member_id: i32,
     pub roll_no: String,

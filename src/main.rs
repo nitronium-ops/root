@@ -7,6 +7,18 @@ use tower_http::cors::CorsLayer;
 use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
+use opentelemetry::{global, trace::TracerProvider as _, KeyValue};
+use opentelemetry_sdk::{
+    metrics::{MeterProviderBuilder, PeriodicReader, SdkMeterProvider},
+    trace::{RandomIdGenerator, Sampler, SdkTracerProvider},
+    Resource,
+};
+use opentelemetry_semantic_conventions::{
+    attribute::{DEPLOYMENT_ENVIRONMENT_NAME, SERVICE_NAME, SERVICE_VERSION},
+    SCHEMA_URL,
+};
+use tracing_opentelemetry::{MetricsLayer, OpenTelemetryLayer};
+
 use daily_task::run_daily_task_at_midnight;
 use graphql::{Mutation, Query};
 use routes::setup_router;
@@ -37,10 +49,27 @@ impl Config {
     }
 }
 
+struct OtelGuard {
+    tracer_provider: SdkTracerProvider,
+    meter_provider: SdkMeterProvider,
+}
+
+impl Drop for OtelGuard {
+    fn drop(&mut self) {
+        if let Err(err) = self.tracer_provider.shutdown() {
+            eprintln!("{err:?}");
+        }
+        if let Err(err) = self.meter_provider.shutdown() {
+            eprintln!("{err:?}");
+        }
+    }
+}
+
 #[tokio::main]
+#[tracing::instrument]
 async fn main() {
     let config = Config::from_env();
-    setup_tracing(&config.env);
+    let guard = setup_tracing(&config.env);
 
     let pool = setup_database(&config.database_url).await;
     let schema = build_graphql_schema(pool.clone(), config.secret_key);
@@ -56,10 +85,81 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port))
         .await
         .unwrap();
-    axum::serve(listener, router).await.unwrap();
+
+    axum::serve(listener, router)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap();
+
+    drop(guard);
 }
 
-fn setup_tracing(env: &str) {
+#[tracing::instrument]
+async fn shutdown_signal() {
+    tokio::signal::ctrl_c()
+        .await
+        .expect("failed to install Ctrl+C handler");
+
+    tracing::info!("Shutdown signal received. Flushing telemetry...");
+}
+
+fn resource() -> Resource {
+    Resource::builder()
+        .with_attributes(vec![
+            KeyValue::new(SERVICE_NAME, env!("CARGO_PKG_NAME")),
+            KeyValue::new(SERVICE_VERSION, env!("CARGO_PKG_VERSION")),
+            KeyValue::new(DEPLOYMENT_ENVIRONMENT_NAME, "develop"),
+        ])
+        .with_schema_url(Vec::new(), SCHEMA_URL)
+        .build()
+}
+
+fn init_meter_provider() -> SdkMeterProvider {
+    let exporter = opentelemetry_otlp::MetricExporter::builder()
+        .with_tonic()
+        .with_temporality(opentelemetry_sdk::metrics::Temporality::default())
+        .build()
+        .unwrap();
+
+    let reader = PeriodicReader::builder(exporter)
+        .with_interval(std::time::Duration::from_secs(30))
+        .build();
+
+    let stdout_reader =
+        PeriodicReader::builder(opentelemetry_stdout::MetricExporter::default()).build();
+
+    let meter_provider = MeterProviderBuilder::default()
+        .with_resource(resource())
+        .with_reader(reader)
+        .with_reader(stdout_reader)
+        .build();
+
+    global::set_meter_provider(meter_provider.clone());
+
+    meter_provider
+}
+
+fn init_tracer_provider() -> SdkTracerProvider {
+    let exporter = opentelemetry_otlp::SpanExporter::builder()
+        .with_tonic()
+        .build()
+        .unwrap();
+
+    SdkTracerProvider::builder()
+        .with_sampler(Sampler::ParentBased(Box::new(Sampler::TraceIdRatioBased(
+            1.0,
+        ))))
+        .with_id_generator(RandomIdGenerator::default())
+        .with_resource(resource())
+        .with_batch_exporter(exporter)
+        .build()
+}
+
+fn setup_tracing(env: &str) -> OtelGuard {
+    let tracer_provider = init_tracer_provider();
+    let meter_provider = init_meter_provider();
+    let tracer = tracer_provider.tracer("tracing-otel-subscriber");
+
     let kolkata_offset = UtcOffset::from_hms(5, 30, 0).expect("Hardcoded offset must be correct");
     let timer = fmt::time::OffsetTime::new(
         kolkata_offset,
@@ -75,6 +175,8 @@ fn setup_tracing(env: &str) {
                     .with_ansi(false) // ANSI encodings are unreadable in the raw file.
                     .with_writer(std::fs::File::create("root.log").unwrap()),
             )
+            .with(MetricsLayer::new(meter_provider.clone()))
+            .with(OpenTelemetryLayer::new(tracer))
             .with(EnvFilter::new("info"))
             .init();
         info!("Running in production mode.")
@@ -93,9 +195,16 @@ fn setup_tracing(env: &str) {
                     .with_ansi(false)
                     .with_writer(std::fs::File::create("root.log").unwrap()),
             )
+            .with(MetricsLayer::new(meter_provider.clone()))
+            .with(OpenTelemetryLayer::new(tracer))
             .with(EnvFilter::new("trace"))
             .init();
         info!("Running in development mode.");
+    }
+
+    OtelGuard {
+        tracer_provider,
+        meter_provider,
     }
 }
 

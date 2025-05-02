@@ -39,7 +39,7 @@ pub struct AttendanceSummaryInfo {
     pub days_attended: i32,
 }
 
-#[derive(InputObject)]
+#[derive(InputObject, Debug)]
 pub struct MarkAttendanceInput {
     pub member_id: i32,
     pub date: NaiveDate,

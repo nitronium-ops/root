@@ -11,11 +11,12 @@ use crate::models::attendance::{Attendance, MarkAttendanceInput};
 
 type HmacSha256 = Hmac<Sha256>;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct AttendanceMutations;
 
 #[Object]
 impl AttendanceMutations {
+    #[tracing::instrument(skip(ctx))]
     #[graphql(name = "markAttendance")]
     async fn mark_attendance(
         &self,

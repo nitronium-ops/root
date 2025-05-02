@@ -9,6 +9,7 @@ use tower_http::cors::CorsLayer;
 
 use crate::graphql::{Mutation, Query};
 
+#[tracing::instrument(skip(schema, cors))]
 pub fn setup_router(
     schema: Schema<Query, Mutation, EmptySubscription>,
     cors: CorsLayer,

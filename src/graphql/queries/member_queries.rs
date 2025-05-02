@@ -9,11 +9,12 @@ use crate::models::{
     status_update_streak::StatusUpdateStreakInfo,
 };
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct MemberQueries;
 
 #[Object]
 impl MemberQueries {
+    #[tracing::instrument(skip(ctx))]
     pub async fn members(
         &self,
         ctx: &Context<'_>,
@@ -45,8 +46,11 @@ impl MemberQueries {
 
 #[ComplexObject]
 impl Member {
+    #[tracing::instrument(skip(ctx))]
     async fn attendance(&self, ctx: &Context<'_>) -> Vec<AttendanceInfo> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool must be in context.");
+
+        tracing::info!("Fetching attendance for member ID: {}", self.member_id);
 
         sqlx::query_as::<_, AttendanceInfo>(
             "SELECT date, is_present, time_in, time_out FROM Attendance WHERE member_id = $1",

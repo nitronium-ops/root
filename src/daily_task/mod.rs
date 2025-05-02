@@ -7,6 +7,7 @@ use tracing::{debug, error, info};
 
 use crate::models::member::Member;
 
+#[tracing::instrument]
 pub async fn run_daily_task_at_midnight(pool: Arc<PgPool>) {
     loop {
         let now = chrono::Utc::now().with_timezone(&Kolkata);
@@ -37,6 +38,7 @@ pub async fn run_daily_task_at_midnight(pool: Arc<PgPool>) {
 /// This function does a number of things, including:
 /// * Insert new attendance records everyday for [`presense`](https://www.github.com/amfoss/presense) to update them later in the day.
 /// * Update the AttendanceSummary table
+#[tracing::instrument]
 async fn execute_daily_task(pool: Arc<PgPool>) {
     // Members is queried outside of each function to avoid repetition
     let members = sqlx::query_as::<_, Member>("SELECT * FROM Member")
@@ -50,6 +52,7 @@ async fn execute_daily_task(pool: Arc<PgPool>) {
     };
 }
 
+#[tracing::instrument]
 async fn update_attendance(members: Vec<Member>, pool: &PgPool) {
     #[allow(deprecated)]
     let today = chrono::Utc::now()
@@ -92,6 +95,7 @@ async fn update_attendance(members: Vec<Member>, pool: &PgPool) {
     }
 }
 
+#[tracing::instrument]
 async fn update_attendance_summary(member_id: i32, pool: &PgPool) {
     debug!("Updating summary for member #{}", member_id);
     #[allow(deprecated)]
@@ -129,6 +133,7 @@ async fn update_attendance_summary(member_id: i32, pool: &PgPool) {
     }
 }
 
+#[tracing::instrument]
 async fn update_days_attended(member_id: i32, today: NaiveDate, pool: &PgPool) {
     // Convert year and month into i32 cause SQLx cannot encode u32 into database types
     let month: i32 = (today.month0() + 1) as i32;

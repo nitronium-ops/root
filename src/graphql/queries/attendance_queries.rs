@@ -5,13 +5,16 @@ use async_graphql::{Context, Object, Result};
 use chrono::NaiveDate;
 use sqlx::PgPool;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct AttendanceQueries;
 
 #[Object]
 impl AttendanceQueries {
+    #[tracing::instrument(skip(ctx))]
     async fn attendance(&self, ctx: &Context<'_>, member_id: i32) -> Result<Vec<Attendance>> {
         let pool = ctx.data::<Arc<PgPool>>().expect("Pool must be in context.");
+
+        tracing::info!("Fetching attendance for member ID: {}", member_id);
 
         Ok(
             sqlx::query_as::<_, Attendance>("SELECT * FROM Attendance WHERE member_id = $1")
