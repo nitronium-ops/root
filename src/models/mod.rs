@@ -1,3 +1,4 @@
+pub mod api_key;
 pub mod attendance;
 pub mod member;
 pub mod project;

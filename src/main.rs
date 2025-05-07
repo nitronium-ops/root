@@ -11,6 +11,8 @@ use daily_task::run_daily_task_at_midnight;
 use graphql::{Mutation, Query};
 use routes::setup_router;
 
+pub mod api_key;
+pub mod auth;
 pub mod daily_task;
 pub mod graphql;
 pub mod models;
@@ -43,14 +45,19 @@ async fn main() {
     setup_tracing(&config.env);
 
     let pool = setup_database(&config.database_url).await;
-    let schema = build_graphql_schema(pool.clone(), config.secret_key);
 
-    tokio::task::spawn(async {
-        run_daily_task_at_midnight(pool).await;
+    let schema_pool = pool.clone();
+    let task_pool = pool.clone();
+    let router_pool = pool.clone();
+
+    let schema = build_graphql_schema(schema_pool, config.secret_key);
+
+    tokio::task::spawn(async move {
+        run_daily_task_at_midnight(task_pool).await;
     });
 
     let cors = setup_cors();
-    let router = setup_router(schema, cors, config.env == "development");
+    let router = setup_router(schema, cors, config.env == "development", router_pool);
 
     info!("Starting Root...");
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port))

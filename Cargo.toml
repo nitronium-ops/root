@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 async-graphql = { version = "7.0.15", features = ["chrono"] }
 async-graphql-axum = "7.0.6"
-axum = "0.8.1"
+axum = { version = "0.8.1", features = ["macros"] }
 chrono = { version = "0.4.38", features = ["clock"] }
 serde = { version = "1.0.188", features = ["derive"] }
 sqlx = { version = "0.8.3", features = ["chrono", "postgres", "runtime-tokio"] }
@@ -24,3 +24,8 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "time", "fmt", "std"] }
 dotenv = "0.15.0"
 time = { version = "0.3.37", features = ["formatting"] }
+oauth2 = { version = "5.0.0", features = ["reqwest"] }
+url = "2.5.4"
+bcrypt = "0.17.0"
+rand = "0.9.1"
+base64 = "0.22.1"
