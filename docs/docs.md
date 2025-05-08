@@ -1,0 +1,25 @@
+# Documentation
+
+## Quick Navigation
+
+- [root-graphql-backend-overview](1-root-graphql-backend-overview.md)
+  - [system-architecture](1.1-system-architecture.md)
+- [project-setup](2-project-setup.md)
+  - [environment-configuration](2.1-environment-configuration.md)
+- [data-models](3-data-models.md)
+  - [member-model](3.1-member-model.md)
+  - [attendance-models](3.2-attendance-models.md)
+  - [status-update-streak-model](3.3-status-update-streak-model.md)
+  - [project-model](3.4-project-model.md)
+- [graphql-api](4-graphql-api.md)
+  - [member-queries-and-mutations](4.1-member-queries-and-mutations.md)
+  - [attendance-queries-and-mutations](4.2-attendance-queries-and-mutations.md)
+  - [streak-queries-and-mutations](4.3-streak-queries-and-mutations.md)
+  - [project-queries-and-mutations](4.4-project-queries-and-mutations.md)
+- [attendance-system](5-attendance-system.md)
+  - [daily-attendance-task](5.1-daily-attendance-task.md)
+  - [attendance-security](5.2-attendance-security.md)
+- [cicd-and-deployment](6-cicd-and-deployment.md)
+  - [docker-deployment](6.1-docker-deployment.md)
+  - [code-quality-and-releases](6.2-code-quality-and-releases.md)
+  - [documentation-generation](6.3-documentation-generation.md)
