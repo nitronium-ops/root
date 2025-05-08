@@ -43,7 +43,9 @@ Further implementation details can be found at [bedrock](https://github.com/amfo
 
 # Documentation
 
-See the [documentation](docs/docs.md) for the API reference, database schema and other detailed documentation.  
+See the [documentation](docs/1-overview.md) for the API reference, database schema and other detailed documentation.  
+
+*This documentation is auto generated using [DeepWiki](https://deepwiki.com/amfoss/root)*
 
 # Contributing
 
