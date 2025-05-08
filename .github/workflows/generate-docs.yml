@@ -35,7 +35,7 @@ jobs:
           pip install -r /tmp/deepwiki-md/requirements.txt
           
           echo "Running deepwiki-md for ${{ github.repository }}..."
-          python /tmp/deepwiki-md/main.py ${{ github.repository }} /tmp/deepwiki-md/out
+          python /tmp/deepwiki-md/main.py amfoss/root /tmp/deepwiki-md/out
           
           echo "Checking output directory..."
           if [ ! -d /tmp/deepwiki-md/out ]; then
