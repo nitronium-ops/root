@@ -24,21 +24,22 @@ jobs:
 
       - name: Clone deepwiki-md tool
         run: |
-          git clone https://github.com/he1senbrg/deepwiki-md /tmp/deepwiki-md
-          pip install -r /tmp/deepwiki-md/requirements.txt
+          cd ..
+          ls
+          git clone https://github.com/he1senbrg/deepwiki-md
+          cd deepwiki-md
+          pip install -r requirements.txt
+          python main.py ${{ github.repository }}
+          cd root
 
       - name: Clean existing docs directory
         run: |
           rm -rf docs
           mkdir docs
 
-      - name: Generate Markdown files
-        run: |
-          python /tmp/deepwiki-md/main.py ${{ github.repository }} /tmp/docs
-
       - name: Copy docs into repo
         run: |
-          cp -r /tmp/docs/* docs/
+          cp -r /../deepwiki-md/out/* docs/
 
       - name: Commit and push docs
         run: |
