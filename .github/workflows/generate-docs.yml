@@ -14,16 +14,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout this repo
-        uses: actions/checkout@v4.2.2
-
       - name: Set up Python
         uses: actions/setup-python@v5.6.0
         with:
           python-version: '3.13'
+          
+      - name: Checkout this repo
+        uses: actions/checkout@v4.2.2
 
       - name: Clone deepwiki-md tool
         run: |
+          cd ..
+          ls
           git clone https://github.com/he1senbrg/deepwiki-md
           cd deepwiki-md
           pip install -r requirements.txt
@@ -38,7 +40,7 @@ jobs:
 
       - name: Copy docs into repo
         run: |
-          cp -r /../deepwiki-md/out/* docs/
+          cp -r ../deepwiki-md/out/* docs/
 
       - name: Commit and push docs
         run: |
