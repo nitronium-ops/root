@@ -14,24 +14,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set up Python
-        uses: actions/setup-python@v5.6.0
-        with:
-          python-version: '3.13'
-          
       - name: Checkout this repo
         uses: actions/checkout@v4.2.2
 
-      - name: Clone deepwiki-md tool
+      - name: Set up Python
+        uses: actions/setup-python@v5.6.0
+        with:
+          python-version: '3.11'
+
+      - name: Clone deepwiki-md tool and run conversion
         run: |
-          cd ..
-          ls
-          git clone https://github.com/he1senbrg/deepwiki-md
-          cd deepwiki-md
-          pip install -r requirements.txt
-          python main.py ${{ github.repository }}
-          cd ..
-          cd root
+          git clone https://github.com/he1senbrg/deepwiki-md /tmp/deepwiki-md
+          pip install -r /tmp/deepwiki-md/requirements.txt
+          python /tmp/deepwiki-md/main.py ${{ github.repository }}
 
       - name: Clean existing docs directory
         run: |
@@ -40,7 +35,7 @@ jobs:
 
       - name: Copy docs into repo
         run: |
-          cp -r ../deepwiki-md/out/* docs/
+          cp -r /tmp/deepwiki-md/out/* docs/
 
       - name: Commit and push docs
         run: |
