@@ -24,8 +24,6 @@ jobs:
 
       - name: Clone deepwiki-md tool
         run: |
-          cd ..
-          ls
           git clone https://github.com/he1senbrg/deepwiki-md
           cd deepwiki-md
           pip install -r requirements.txt
