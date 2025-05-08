@@ -14,54 +14,5 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout this repo
-        uses: actions/checkout@v4.2.2
-
-      - name: Set up Python
-        uses: actions/setup-python@v5.6.0
-        with:
-          python-version: '3.11'
-
-      - name: Log current repository name
-        run: |
-          echo "Running for repository: ${{ github.repository }}"
-
-      - name: Clone deepwiki-md tool and run conversion
-        run: |
-          echo "Cloning deepwiki-md..."
-          git clone https://github.com/he1senbrg/deepwiki-md /tmp/deepwiki-md
-          
-          echo "Installing dependencies..."
-          pip install -r /tmp/deepwiki-md/requirements.txt
-          
-          echo "Running deepwiki-md for ${{ github.repository }}..."
-          python /tmp/deepwiki-md/main.py amfoss/root /tmp/deepwiki-md/out
-          
-          echo "Checking output directory..."
-          if [ ! -d /tmp/deepwiki-md/out ]; then
-            echo "❌ DeepWiki output directory was not created"
-            exit 1
-          fi
-          
-          echo "✅ Contents of generated docs:"
-          ls -la /tmp/deepwiki-md/out
-
-      - name: Clean existing docs directory
-        run: |
-          echo "Cleaning old docs/ directory..."
-          rm -rf docs
-          mkdir docs
-
-      - name: Copy new docs into repo
-        run: |
-          echo "Copying new docs into docs/ directory..."
-          cp -r /tmp/deepwiki-md/out/* docs/
-
-      - name: Commit and push docs
-        run: |
-          echo "Committing and pushing updated docs..."
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/
-          git commit -m "Update DeepWiki docs [automated]" || echo "No changes to commit"
-          git push
+      - name: DeepWiki Documentation Generator
+        uses: he1senbrg/deepwiki-action@v1.0
