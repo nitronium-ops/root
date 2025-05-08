@@ -15,4 +15,4 @@ jobs:
 
     steps:
       - name: DeepWiki Documentation Generator
-        uses: he1senbrg/deepwiki-action@latest
+        uses: he1senbrg/deepwiki-action@v1.1
