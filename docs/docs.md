@@ -1,33 +1,25 @@
-# Root Documentation
+# Documentation
 
-## Project Structure
-```
-src/
-├── graphql/        # GraphQL schema definitions
-│   ├── mutations/  # Data modification operations
-│   └── queries/    # Data retrieval operations
-├── models/         # Database models and types
-├── daily_task/     # Self explanatory
-└── routes.rs       # HTTP routing setup
-```
+## Quick Navigation
 
-## GraphQL API Structure
-- [Member Management](member.md) - Managing club member profiles
-- [Attendance System](attendance.md) - Daily attendance tracking and summaries  
-- [Status Streaks](streaks.md) - Tracking daily status update streaks
-
-## Database Schema
-- [Database](database.md) - Database structure and migrations
-
-## Core Features
-### Member Management
-- Query members by ID, roll number, or Discord ID
-- Create and update member profiles
-
-### Attendance System  
-- Mark daily attendance with time tracking
-- Generate monthly attendance summaries
-
-### Status Updates
-- Track daily status update streaks
-- Record maximum streaks achieved
+- [Root Graphql Backend Overview](1-root-graphql-backend-overview.md)
+  - [System Architecture](1.1-system-architecture.md)
+- [Project Setup](2-project-setup.md)
+  - [Environment Configuration](2.1-environment-configuration.md)
+- [Data Models](3-data-models.md)
+  - [Member Model](3.1-member-model.md)
+  - [Attendance Models](3.2-attendance-models.md)
+  - [Status Update Streak Model](3.3-status-update-streak-model.md)
+  - [Project Model](3.4-project-model.md)
+- [Graphql Api](4-graphql-api.md)
+  - [Member Queries And Mutations](4.1-member-queries-and-mutations.md)
+  - [Attendance Queries And Mutations](4.2-attendance-queries-and-mutations.md)
+  - [Streak Queries And Mutations](4.3-streak-queries-and-mutations.md)
+  - [Project Queries And Mutations](4.4-project-queries-and-mutations.md)
+- [Attendance System](5-attendance-system.md)
+  - [Daily Attendance Task](5.1-daily-attendance-task.md)
+  - [Attendance Security](5.2-attendance-security.md)
+- [Cicd And Deployment](6-cicd-and-deployment.md)
+  - [Docker Deployment](6.1-docker-deployment.md)
+  - [Code Quality And Releases](6.2-code-quality-and-releases.md)
+  - [Documentation Generation](6.3-documentation-generation.md)
