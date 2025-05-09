@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: DeepWiki Documentation Generator
-        uses: he1senbrg/deepwiki-action@v1.1
+        uses: he1senbrg/deepwiki-action@v1.2
         with:
           branch: 'develop'
           message: 'Updated documentation from DeepWiki'
